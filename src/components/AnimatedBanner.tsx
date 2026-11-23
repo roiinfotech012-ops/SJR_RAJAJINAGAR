@@ -190,19 +190,19 @@ const AnimatedBanner = () => {
             {/* Right: stats card with balanced, lighter frosted glass background */}
             <div className="hidden lg:block lg:col-span-5">
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-br from-saffron-orange/20 via-transparent to-indian-green/20 rounded-3xl blur-md opacity-40 pointer-events-none" />
-                <div className="relative bg-black/55 backdrop-blur-md border border-white/20 rounded-3xl p-6 sm:p-7 shadow-2xl">
+                <div className="absolute -inset-1 bg-gradient-to-br from-saffron-orange/25 via-transparent to-indian-green/25 rounded-3xl blur-md opacity-45 pointer-events-none" />
+                <div className="relative bg-black/60 backdrop-blur-xl border border-white/20 rounded-3xl p-6 sm:p-7 shadow-2xl">
                   <div className="flex items-center justify-between mb-5">
                     <div>
-                      <p className="text-white/80 text-[11px] uppercase tracking-[0.2em] font-semibold">
+                      <p className="text-white/90 text-[11px] uppercase tracking-[0.2em] font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                         At A Glance
                       </p>
-                      <p className="text-white font-serif text-xl sm:text-2xl mt-1">
+                      <p className="text-white font-serif text-xl sm:text-2xl mt-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                         Excellence by Numbers
                       </p>
                     </div>
-                    <div className="h-10 w-10 rounded-xl bg-saffron-orange/25 border border-saffron-orange/50 flex items-center justify-center">
-                      <Sparkles className="h-5 w-5 text-saffron-orange" />
+                    <div className="h-10 w-10 rounded-xl bg-saffron-orange/25 border border-saffron-orange/50 flex items-center justify-center shadow-md">
+                      <Sparkles className="h-5 w-5 text-saffron-orange drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" />
                     </div>
                   </div>
 
@@ -210,13 +210,13 @@ const AnimatedBanner = () => {
                     {stats.map((stat, i) => (
                       <div
                         key={i}
-                        className="group relative bg-white/10 hover:bg-white/20 border border-white/15 hover:border-white/30 rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1"
+                        className="group relative bg-black/35 hover:bg-black/45 border border-white/20 hover:border-white/35 rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm shadow-md"
                       >
-                        <stat.icon className="h-6 w-6 text-saffron-orange mb-2.5 group-hover:scale-110 transition-transform" />
-                        <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-none tracking-tight">
+                        <stat.icon className="h-6 w-6 text-saffron-orange mb-2.5 group-hover:scale-110 transition-transform drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" />
+                        <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-none tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
                           {stat.value}
                         </div>
-                        <div className="text-white/90 text-[11px] sm:text-xs tracking-wider mt-1.5 uppercase font-medium">
+                        <div className="text-white/95 text-[11px] sm:text-xs tracking-wider mt-1.5 uppercase font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
                           {stat.label}
                         </div>
                       </div>
