@@ -1137,37 +1137,19 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "id": "facility-ramp-1",
     "category": "campus",
     "categoryLabel": "Campus & Facilities",
-    "title": "Accessible Campus Ramp Infrastructure — Photo 1",
+    "title": "Accessible Campus Ramp Infrastructure",
     "eventTitle": "Accessible Campus Ramp Infrastructure",
     "src": "/images/Photos/Ramp/DSC00211.JPG",
     "originalFilename": "DSC00211.JPG"
   },
   {
-    "id": "facility-ramp-2",
-    "category": "campus",
-    "categoryLabel": "Campus & Facilities",
-    "title": "Accessible Campus Ramp Infrastructure — Photo 2",
-    "eventTitle": "Accessible Campus Ramp Infrastructure",
-    "src": "/images/Photos/Ramp/DSC00213.JPG",
-    "originalFilename": "DSC00213.JPG"
-  },
-  {
     "id": "facility-ro-plant-1",
     "category": "campus",
     "categoryLabel": "Campus & Facilities",
-    "title": "Pure Drinking Water RO Plant — Photo 1",
+    "title": "Pure Drinking Water RO Plant",
     "eventTitle": "Pure Drinking Water RO Plant",
     "src": "/images/Photos/RO Plant/DSC01055.JPG",
     "originalFilename": "DSC01055.JPG"
-  },
-  {
-    "id": "facility-ro-plant-2",
-    "category": "campus",
-    "categoryLabel": "Campus & Facilities",
-    "title": "Pure Drinking Water RO Plant — Photo 2",
-    "eventTitle": "Pure Drinking Water RO Plant",
-    "src": "/images/Photos/RO Plant/DSC01056.JPG",
-    "originalFilename": "DSC01056.JPG"
   },
   {
     "id": "facility-robotics-1",
