@@ -187,11 +187,11 @@ const AnimatedBanner = () => {
               </div>
             </div>
 
-            {/* Right: stats card with dark, solid high-opacity background */}
+            {/* Right: stats card with balanced, lighter frosted glass background */}
             <div className="hidden lg:block lg:col-span-5">
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-br from-saffron-orange/30 via-transparent to-indian-green/30 rounded-3xl blur-md opacity-70 pointer-events-none" />
-                <div className="relative bg-black/90 backdrop-blur-xl border border-white/20 rounded-3xl p-6 sm:p-7 shadow-2xl">
+                <div className="absolute -inset-1 bg-gradient-to-br from-saffron-orange/20 via-transparent to-indian-green/20 rounded-3xl blur-md opacity-40 pointer-events-none" />
+                <div className="relative bg-black/55 backdrop-blur-md border border-white/20 rounded-3xl p-6 sm:p-7 shadow-2xl">
                   <div className="flex items-center justify-between mb-5">
                     <div>
                       <p className="text-white/80 text-[11px] uppercase tracking-[0.2em] font-semibold">
