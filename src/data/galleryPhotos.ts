@@ -675,15 +675,6 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "originalFilename": "DSC00055.JPG"
   },
   {
-    "id": "facility-assembly-2",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Morning School Assembly — Photo 2",
-    "eventTitle": "Morning School Assembly",
-    "src": "/images/Photos/Assembly/DSC00056.JPG",
-    "originalFilename": "DSC00056.JPG"
-  },
-  {
     "id": "facility-assembly-3",
     "category": "cultural",
     "categoryLabel": "Cultural & Arts",
