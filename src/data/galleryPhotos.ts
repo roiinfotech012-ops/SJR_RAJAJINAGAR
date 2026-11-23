@@ -1440,15 +1440,6 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "originalFilename": "Y2.JPG"
   },
   {
-    "id": "facility-yoga-7",
-    "category": "sports",
-    "categoryLabel": "Sports & Activities",
-    "title": "Yoga & Mindfulness — Breathing & Concentration",
-    "eventTitle": "Yoga & Mindfulness",
-    "src": "/images/Photos/Yoga/Y3.JPG",
-    "originalFilename": "Y3.JPG"
-  },
-  {
     "id": "facility-yoga-8",
     "category": "sports",
     "categoryLabel": "Sports & Activities",
