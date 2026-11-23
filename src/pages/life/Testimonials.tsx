@@ -13,7 +13,7 @@ const TestimonialCard = ({ t, i }: { t: TestimonialDisplayItem; i: number }) => 
   const isKannada = t.language === "kn";
   const quoteParagraphs = t.quote.split("\n\n").filter(Boolean);
   const previewText = quoteParagraphs[0];
-  const hasMore = quoteParagraphs.length > 1 || t.quote.length > 220;
+  const hasMore = quoteParagraphs.length > 1 || t.quote.length > 200 || Boolean(t.subheadings?.length);
 
   return (
     <motion.div
@@ -23,14 +23,14 @@ const TestimonialCard = ({ t, i }: { t: TestimonialDisplayItem; i: number }) => 
       transition={{ duration: 0.45, delay: Math.min(i * 0.05, 0.3) }}
       className="h-full flex"
     >
-      <Card className="group w-full bg-white rounded-2xl border border-border/70 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden">
+      <Card className="group w-full bg-white rounded-2xl border border-border/70 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden">
         {/* Top color accent */}
         <div className="h-1.5 w-full bg-gradient-to-r from-indian-green via-saffron-orange to-indian-green" />
 
         <CardContent className="p-6 md:p-7 flex flex-col flex-1 justify-between">
           <div>
             {/* Header with Photo, Names, Class Badge */}
-            <div className="flex items-start gap-4 mb-5">
+            <div className="flex items-start gap-4 mb-4 min-h-[4.25rem]">
               <div className="relative flex-shrink-0">
                 <div className="h-16 w-16 rounded-full p-[2px] bg-gradient-to-tr from-indian-green to-saffron-orange shadow-md">
                   <img
@@ -81,8 +81,16 @@ const TestimonialCard = ({ t, i }: { t: TestimonialDisplayItem; i: number }) => 
               <Quote className="h-4 w-4 text-indian-green/40 mb-2 inline-block mr-1.5" />
               
               {!isExpanded ? (
-                <div>
-                  <p className="line-clamp-4 italic text-foreground/80">
+                <div className="min-h-[7.5rem] flex flex-col justify-start">
+                  <p
+                    className="line-clamp-5 italic text-foreground/80 leading-relaxed text-[14px] md:text-[15px]"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 5,
+                      overflow: "hidden",
+                    }}
+                  >
                     "{previewText}"
                   </p>
                 </div>
@@ -113,8 +121,8 @@ const TestimonialCard = ({ t, i }: { t: TestimonialDisplayItem; i: number }) => 
           </div>
 
           {/* Expand / Collapse Action */}
-          {hasMore && (
-            <div className="mt-4 pt-3 border-t border-border/40 flex justify-end">
+          <div className="mt-4 pt-3 border-t border-border/40 flex justify-end min-h-[44px] items-center">
+            {hasMore ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -132,8 +140,10 @@ const TestimonialCard = ({ t, i }: { t: TestimonialDisplayItem; i: number }) => 
                   </>
                 )}
               </Button>
-            </div>
-          )}
+            ) : (
+              <span className="text-[11px] text-muted-foreground/60 italic">Verified SJR Parent</span>
+            )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>
