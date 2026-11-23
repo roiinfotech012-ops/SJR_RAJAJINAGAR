@@ -1206,15 +1206,6 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "originalFilename": "A7400878.JPG"
   },
   {
-    "id": "facility-school-building-5",
-    "category": "campus",
-    "categoryLabel": "Campus & Facilities",
-    "title": "Rajajinagar Campus Building & Entrance — Photo 5",
-    "eventTitle": "Rajajinagar Campus Building & Entrance",
-    "src": "/images/Photos/School Building/DSC01515.JPG",
-    "originalFilename": "DSC01515.JPG"
-  },
-  {
     "id": "facility-school-building-6",
     "category": "campus",
     "categoryLabel": "Campus & Facilities",
