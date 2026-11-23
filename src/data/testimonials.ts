@@ -260,5 +260,60 @@ We are truly grateful to the teachers and the school management for their dedica
 The teachers are supportive, encouraging, and provide individual attention, which has greatly helped in my child's academic and personal growth. The school offers a safe and disciplined environment along with good infrastructure and balanced co-curricular activities.
 
 Regular parent-teacher interactions keep us well informed about his progress. I am truly grateful to the management, principal, and teachers for their continuous efforts in shaping my child's future.`
+  },
+  {
+    id: "testimonial-14",
+    sourcePage: 14,
+    parentName: "Sangeetha Ganesh",
+    childName: "Darshith",
+    className: "Grade 7",
+    language: "en",
+    image: "/images/testimonials/14-sangeetha-ganesh.jpg",
+    imageAlt: "Portrait of parent Sangeetha Ganesh",
+    quote: `SJR Public School provides quality education with supportive teachers and a safe, value-based environment. My son has grown academically and developed leadership skills during his time here.`
+  },
+  {
+    id: "testimonial-15",
+    sourcePage: 15,
+    parentName: "Mrs Deepa Chandramouli",
+    childName: "Vaidoorya Kashyap",
+    className: "Grade 7",
+    language: "en",
+    image: "/images/testimonials/15-deepa-chandramouli.jpg",
+    imageAlt: "Portrait of parent Mrs Deepa Chandramouli",
+    quote: `Truly appreciate the importance given to co-curricular activities at SJR Public School, Rajajinagar. The school provides many opportunities for children to explore their talents beyond academics. These activities have helped my daughter become more confident, active, and happy. I am grateful to the school for supporting the overall development of the students.`
+  },
+  {
+    id: "testimonial-16",
+    sourcePage: 16,
+    parentName: "Ameena Bano",
+    childName: "Ayesha",
+    className: "Grade 7",
+    language: "en",
+    image: "/images/testimonials/16-ameena-bano.jpg",
+    imageAlt: "Portrait of parent Ameena Bano",
+    quote: `We are very happy to see the improvement in Ayesha's academic performance and overall personality development. The teachers are incredibly supportive and dedicated. Choosing this school was the best decision for our child.`
+  },
+  {
+    id: "testimonial-17",
+    sourcePage: 17,
+    parentName: "Arvind Miriyala",
+    childName: "Ujwal Miriyala",
+    className: "Grade 7",
+    language: "en",
+    image: "/images/testimonials/17-arvind-miriyala.jpg",
+    imageAlt: "Portrait of parent Arvind Miriyala",
+    quote: `SJR Public School provides an environment that promotes overall development through activities such as debate competitions, science exhibitions, Vedic Maths, Scouts & Guides, and Taekwondo. Combined with inspiring teachers, the school continues to provide an excellent platform for my children to learn, grow, and excel.`
+  },
+  {
+    id: "testimonial-18",
+    sourcePage: 18,
+    parentName: "Shruti Manisha",
+    childName: "Ira Sreenith",
+    className: "Class 7",
+    language: "en",
+    image: "/images/testimonials/18-shruti-manisha.jpg",
+    imageAlt: "Portrait of parent Shruti Manisha",
+    quote: `We are extremely happy with our experience at SJR Public School, Rajajinagar. Our ward studies in Class 7, and the school provides a nurturing, disciplined, and inspiring learning environment. The Principal's dynamic leadership and commitment to excellence are clearly reflected in the school's strong values and academic standards. A special thanks to all the teachers, their engaging teaching methods, clarity of concepts, and encouragement make learning enjoyable and effective. The school beautifully balances academics, discipline, and overall personality development. We truly appreciate the passion and dedication of the Principal and all the teachers in shaping confident and responsible students.`
   }
 ];
