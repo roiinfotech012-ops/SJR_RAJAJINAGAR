@@ -936,15 +936,6 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "originalFilename": "DSC00576.JPG"
   },
   {
-    "id": "facility-cubs-and-bul-bul-5",
-    "category": "sports",
-    "categoryLabel": "Sports & Activities",
-    "title": "Cubs & Bulbul Scouts Activity — Photo 5",
-    "eventTitle": "Cubs & Bulbul Scouts Activity",
-    "src": "/images/Photos/Cubs and Bul Bul/DSC00579.JPG",
-    "originalFilename": "DSC00579.JPG"
-  },
-  {
     "id": "facility-kids-play-area-and-activity-1",
     "category": "sports",
     "categoryLabel": "Sports & Activities",
@@ -988,15 +979,6 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "eventTitle": "Kids Play Area & Activity Zone",
     "src": "/images/Photos/Kids Play Area And Activity/DSC00649.JPG",
     "originalFilename": "DSC00649.JPG"
-  },
-  {
-    "id": "facility-kids-play-area-and-activity-6",
-    "category": "sports",
-    "categoryLabel": "Sports & Activities",
-    "title": "Kids Play Area & Activity Zone — Photo 6",
-    "eventTitle": "Kids Play Area & Activity Zone",
-    "src": "/images/Photos/Kids Play Area And Activity/DSC00651.JPG",
-    "originalFilename": "DSC00651.JPG"
   },
   {
     "id": "facility-kids-play-area-and-activity-7",

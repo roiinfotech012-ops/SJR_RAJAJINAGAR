@@ -11,7 +11,7 @@ const galleryImages = [
   { src: "/images/Photos/Music/DSC00997.JPG", label: "Music & Performing Arts" },
   { src: "/images/Photos/Art and Craft/DSC00861.JPG", label: "Art & Craft Workshop" },
   { src: "/images/Photos/Sports/DSC01303.JPG", label: "Chess & Mind Sports" },
-  { src: "/images/Photos/Kids Play Area And Activity/DSC00651.JPG", label: "Play Area & Active Learning" },
+  { src: "/images/Photos/Kids Play Area And Activity/DSC00649.JPG", label: "Play Area & Active Learning" },
   { src: "/images/Photos/Robotics/DSC01674.JPG", label: "Robotics & STEM Activities" },
   { src: "/images/Photos/Sports/DSC01389.JPG", label: "Athletics & Physical Fitness" },
 ];

@@ -67,7 +67,6 @@ const galleryImages = [
   { src: "/images/Photos/Cubs and Bul Bul/DSC00479.JPG", alt: "Scouts and Guides training drills" },
   { src: "/images/Photos/Cubs and Bul Bul/DSC00501.JPG", alt: "Outdoor scouting activities and discipline" },
   { src: "/images/Photos/Cubs and Bul Bul/DSC00549.JPG", alt: "Scouts and Guides promise and salute" },
-  { src: "/images/Photos/Cubs and Bul Bul/DSC00579.JPG", alt: "Troop squad inspection and formation" },
   { src: "/images/Photos/Assembly/DSC00056.JPG", alt: "Morning assembly honor and flag salute" },
 ];
 
