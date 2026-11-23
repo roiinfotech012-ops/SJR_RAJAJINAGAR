@@ -9,7 +9,6 @@ import {
 const taekwondoImg = "/images/Photos/Taekwondo/IMG-20261030-WA0004.jpg";
 
 const taekwondoGallery = [
-  { src: "/images/Photos/Taekwondo/IMG-20261030-WA0004.jpg", alt: "Taekwondo students in training session", position: "center" },
   { src: "/images/Photos/Taekwondo/IMG-20261030-WA0011.jpg", alt: "Taekwondo practice and demonstration", position: "center" },
   { src: "/images/Photos/Taekwondo/IMG-20261030-WA0014.jpg", alt: "Taekwondo high-kick technique", position: "center 20%" },
   { src: "/images/Photos/Taekwondo/IMG-20261030-WA0017.jpg", alt: "Taekwondo defensive sparring stance", position: "center 18%" },

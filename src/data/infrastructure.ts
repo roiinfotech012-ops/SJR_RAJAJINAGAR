@@ -86,7 +86,6 @@ export const facilitiesData: InfrastructureFacility[] = [
     coverImage: "/images/Photos/Auditorium/IMG-20261023-WA0011.jpg",
     coverImageAlt: "Campus Multipurpose Auditorium at SJR Public School Rajajinagar",
     galleryImages: [
-      { src: "/images/Photos/Auditorium/IMG-20261023-WA0011.jpg", alt: "Auditorium hall and stage setup" },
       { src: "/images/Photos/Auditorium/IMG-20261023-WA0010.jpg", alt: "Auditorium stage with performance lighting" },
       { src: "/images/Photos/Auditorium/FB_IMG_1792747998259.jpg", alt: "Campus cultural events and assembly auditorium" },
       { src: "/images/Photos/Auditorium/DSC01249.JPG", alt: "Auditorium stage and seating arrangement" },
@@ -157,7 +156,6 @@ export const facilitiesData: InfrastructureFacility[] = [
     coverImage: "/images/Photos/Yoga/FB_IMG_1792747972794.jpg",
     coverImageAlt: "Yoga & Wellness Hall at SJR Public School Rajajinagar",
     galleryImages: [
-      { src: "/images/Photos/Yoga/FB_IMG_1792747972794.jpg", alt: "Students practicing yoga asanas in wellness hall" },
       { src: "/images/Photos/Yoga/FB_IMG_1792747979114.jpg", alt: "Guided pranayama and breathing exercises" },
       { src: "/images/Photos/Yoga/FB_IMG_1792748020229.jpg", alt: "Group meditation and mindfulness session" },
       { src: "/images/Photos/Yoga/FB_IMG_1792748022375.jpg", alt: "Yoga postures and flexibility training" },

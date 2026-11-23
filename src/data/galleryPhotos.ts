@@ -297,15 +297,6 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "originalFilename": "WhatsApp Image 2026-10-05 at 2.08.27 PM.jpeg"
   },
   {
-    "id": "event-investiture-ceremony-3",
-    "category": "events",
-    "categoryLabel": "Events",
-    "title": "Investiture Ceremony 2026–27 — Photo 3",
-    "eventTitle": "Investiture Ceremony 2026–27",
-    "src": "/images/Events/Investiture ceremony/WhatsApp Image 2026-10-05 at 2.08.28 PM.jpeg",
-    "originalFilename": "WhatsApp Image 2026-10-05 at 2.08.28 PM.jpeg"
-  },
-  {
     "id": "event-krishna-janmastmi-1",
     "category": "events",
     "categoryLabel": "Events",
@@ -1278,24 +1269,6 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
     "originalFilename": "DSC01522.JPG"
   },
   {
-    "id": "facility-school-building-7",
-    "category": "campus",
-    "categoryLabel": "Campus & Facilities",
-    "title": "Rajajinagar Campus Building & Entrance — Photo 7",
-    "eventTitle": "Rajajinagar Campus Building & Entrance",
-    "src": "/images/Photos/School Building/School Building1.jpg",
-    "originalFilename": "School Building1.jpg"
-  },
-  {
-    "id": "facility-school-building-8",
-    "category": "campus",
-    "categoryLabel": "Campus & Facilities",
-    "title": "Rajajinagar Campus Building & Entrance — Photo 8",
-    "eventTitle": "Rajajinagar Campus Building & Entrance",
-    "src": "/images/Photos/School Building/school-building-main-gate.jpg",
-    "originalFilename": "school-building-main-gate.jpg"
-  },
-  {
     "id": "facility-science-lab-1",
     "category": "labs",
     "categoryLabel": "Labs & STEM",
@@ -1459,75 +1432,75 @@ export const allSchoolPhotos: GalleryPhotoItem[] = [
   },
   {
     "id": "facility-yoga-1",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 1",
-    "eventTitle": "Yoga & Mindfulness Session",
-    "src": "/images/Photos/Yoga/DSC00904(1).JPG",
-    "originalFilename": "DSC00904(1).JPG"
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Pyramid Asana Formation",
+    "eventTitle": "Yoga & Mindfulness",
+    "src": "/images/Photos/Yoga/FB_IMG_1792747972794.jpg",
+    "originalFilename": "FB_IMG_1792747972794.jpg"
   },
   {
     "id": "facility-yoga-2",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 2",
-    "eventTitle": "Yoga & Mindfulness Session",
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Standing Alignment & Balance",
+    "eventTitle": "Yoga & Mindfulness",
+    "src": "/images/Photos/Yoga/FB_IMG_1792747979114.jpg",
+    "originalFilename": "FB_IMG_1792747979114.jpg"
+  },
+  {
+    "id": "facility-yoga-3",
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Core Flexibility Training",
+    "eventTitle": "Yoga & Mindfulness",
+    "src": "/images/Photos/Yoga/FB_IMG_1792748020229.jpg",
+    "originalFilename": "FB_IMG_1792748020229.jpg"
+  },
+  {
+    "id": "facility-yoga-4",
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Reclined Postures & Concentration",
+    "eventTitle": "Yoga & Mindfulness",
+    "src": "/images/Photos/Yoga/FB_IMG_1792748022375.jpg",
+    "originalFilename": "FB_IMG_1792748022375.jpg"
+  },
+  {
+    "id": "facility-yoga-5",
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Indoor Wellness Hall Session",
+    "eventTitle": "Yoga & Mindfulness",
     "src": "/images/Photos/Yoga/DSC00904.JPG",
     "originalFilename": "DSC00904.JPG"
   },
   {
-    "id": "facility-yoga-3",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 3",
-    "eventTitle": "Yoga & Mindfulness Session",
+    "id": "facility-yoga-6",
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Advanced Asana Demonstration",
+    "eventTitle": "Yoga & Mindfulness",
     "src": "/images/Photos/Yoga/Y2.JPG",
     "originalFilename": "Y2.JPG"
   },
   {
-    "id": "facility-yoga-4",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 4",
-    "eventTitle": "Yoga & Mindfulness Session",
+    "id": "facility-yoga-7",
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Breathing & Concentration",
+    "eventTitle": "Yoga & Mindfulness",
     "src": "/images/Photos/Yoga/Y3.JPG",
     "originalFilename": "Y3.JPG"
   },
   {
-    "id": "facility-yoga-5",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 5",
-    "eventTitle": "Yoga & Mindfulness Session",
+    "id": "facility-yoga-8",
+    "category": "sports",
+    "categoryLabel": "Sports & Activities",
+    "title": "Yoga & Mindfulness — Focus & Posture Routine",
+    "eventTitle": "Yoga & Mindfulness",
     "src": "/images/Photos/Yoga/Y4.JPG",
     "originalFilename": "Y4.JPG"
-  },
-  {
-    "id": "facility-yoga-6",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 6",
-    "eventTitle": "Yoga & Mindfulness Session",
-    "src": "/images/Photos/Yoga/Y5.JPG",
-    "originalFilename": "Y5.JPG"
-  },
-  {
-    "id": "facility-yoga-7",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 7",
-    "eventTitle": "Yoga & Mindfulness Session",
-    "src": "/images/Photos/Yoga/Y6.JPG",
-    "originalFilename": "Y6.JPG"
-  },
-  {
-    "id": "facility-yoga-8",
-    "category": "cultural",
-    "categoryLabel": "Cultural & Arts",
-    "title": "Yoga & Mindfulness Session — Photo 8",
-    "eventTitle": "Yoga & Mindfulness Session",
-    "src": "/images/Photos/Yoga/Yoga.JPG",
-    "originalFilename": "Yoga.JPG"
   },
   {
     "id": "heritage-1",
