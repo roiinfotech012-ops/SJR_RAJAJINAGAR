@@ -190,18 +190,18 @@ const AnimatedBanner = () => {
             {/* Right: glass stats card (visible on desktop) */}
             <div className="hidden lg:block lg:col-span-5">
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-br from-saffron-orange/10 via-transparent to-indian-green/10 rounded-3xl blur-md opacity-30 pointer-events-none" />
-                <div className="relative bg-black/20 backdrop-blur-sm border border-white/20 rounded-3xl p-6 sm:p-7 shadow-2xl">
+                <div className="absolute -inset-1 bg-gradient-to-br from-saffron-orange/20 via-transparent to-indian-green/20 rounded-3xl blur-md opacity-50 pointer-events-none" />
+                <div className="relative bg-black/75 backdrop-blur-md border border-white/25 rounded-3xl p-6 sm:p-7 shadow-2xl">
                   <div className="flex items-center justify-between mb-5">
                     <div>
-                      <p className="text-white/70 text-[11px] uppercase tracking-[0.2em] font-semibold">
+                      <p className="text-white/80 text-[11px] uppercase tracking-[0.2em] font-semibold">
                         At A Glance
                       </p>
                       <p className="text-white font-serif text-xl sm:text-2xl mt-1">
                         Excellence by Numbers
                       </p>
                     </div>
-                    <div className="h-10 w-10 rounded-xl bg-saffron-orange/20 border border-saffron-orange/40 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl bg-saffron-orange/25 border border-saffron-orange/50 flex items-center justify-center">
                       <Sparkles className="h-5 w-5 text-saffron-orange" />
                     </div>
                   </div>
@@ -210,13 +210,13 @@ const AnimatedBanner = () => {
                     {stats.map((stat, i) => (
                       <div
                         key={i}
-                        className="group relative bg-white/[0.05] hover:bg-white/[0.12] border border-white/15 hover:border-white/30 rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1"
+                        className="group relative bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/35 rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1"
                       >
                         <stat.icon className="h-6 w-6 text-saffron-orange mb-2.5 group-hover:scale-110 transition-transform" />
                         <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-none tracking-tight">
                           {stat.value}
                         </div>
-                        <div className="text-white/80 text-[11px] sm:text-xs tracking-wider mt-1.5 uppercase font-medium">
+                        <div className="text-white/90 text-[11px] sm:text-xs tracking-wider mt-1.5 uppercase font-medium">
                           {stat.label}
                         </div>
                       </div>
