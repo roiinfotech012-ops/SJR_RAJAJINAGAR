@@ -3,11 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Calendar, ChevronRight, Newspaper } from "lucide-react";
 import { schoolEvents } from "@/data/events";
+import { getDeletedNewsSlugs } from "@/lib/newsContent";
 
 const NewsEventsHomeSection = () => {
+  const deletedSlugs = new Set(getDeletedNewsSlugs());
+  const activeEvents = schoolEvents.filter((item) => !deletedSlugs.has(item.id));
   // Display exactly 2 featured events with images
-  const latestEvents = schoolEvents.slice(0, 2);
-  const tickerEvents = schoolEvents;
+  const latestEvents = activeEvents.slice(0, 2);
+  const tickerEvents = activeEvents;
 
   return (
     <section className="py-8 lg:py-10 bg-white">

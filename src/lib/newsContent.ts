@@ -102,8 +102,30 @@ const schoolEventToDisplay = (item: SchoolEvent): NewsDisplayItem => ({
   isVisible: true,
 });
 
+const deletedSlugsKey = "sjr_deleted_news_slugs";
+
+export const getDeletedNewsSlugs = (): string[] => {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(deletedSlugsKey) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const markNewsSlugDeleted = (slug: string) => {
+  try {
+    const current = getDeletedNewsSlugs();
+    if (!current.includes(slug)) {
+      current.push(slug);
+      window.localStorage.setItem(deletedSlugsKey, JSON.stringify(current));
+    }
+  } catch {}
+};
+
 export const mergeNewsItems = (adminNews: AdminContentItem[] = []): NewsDisplayItem[] => {
   const bySlug = new Map<string, NewsDisplayItem>();
+  const deletedSlugs = new Set(getDeletedNewsSlugs());
 
   // 1. Add all rich school news and events
   newsEvents.forEach((item) => bySlug.set(item.slug, newsEventToDisplay(item)));
@@ -121,11 +143,14 @@ export const mergeNewsItems = (adminNews: AdminContentItem[] = []): NewsDisplayI
     bySlug.set(displayItem.slug || item.id, displayItem);
   });
 
-  return Array.from(bySlug.values());
+  return Array.from(bySlug.values()).filter((item) => !deletedSlugs.has(item.slug));
 };
 
 export const findNewsItem = (adminNews: AdminContentItem[], slug?: string): NewsDisplayItem | undefined => {
   if (!slug) return undefined;
+  const deletedSlugs = new Set(getDeletedNewsSlugs());
+  if (deletedSlugs.has(slug)) return undefined;
+
   const adminItem = adminNews.find((item) => item.id === slug || getAdminNewsSlug(item) === slug);
   if (adminItem) return adminNewsToDisplay(adminItem);
 

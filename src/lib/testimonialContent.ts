@@ -49,14 +49,40 @@ const databaseTestimonialToDisplay = (item: AdminContentItem): TestimonialDispla
   displayOrder: item.display_order || 0,
 });
 
+const deletedTestimonialsKey = "sjr_deleted_testimonials";
+
+export const getDeletedTestimonialNames = (): string[] => {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(deletedTestimonialsKey) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const markTestimonialDeleted = (name: string) => {
+  try {
+    const current = getDeletedTestimonialNames();
+    const clean = name.trim().toLowerCase();
+    if (!current.includes(clean)) {
+      current.push(clean);
+      window.localStorage.setItem(deletedTestimonialsKey, JSON.stringify(current));
+    }
+  } catch {}
+};
+
 export const mergeTestimonialItems = (adminTestimonials: AdminContentItem[] = []) => {
   const byName = new Map<string, TestimonialDisplayItem>();
+  const deletedNames = new Set(getDeletedTestimonialNames());
+
   frontendTestimonials.forEach((item) => byName.set(item.name.toLowerCase(), item));
   adminTestimonials.forEach((item) => {
     const displayItem = databaseTestimonialToDisplay(item);
     byName.set(displayItem.name.toLowerCase(), displayItem);
   });
-  return Array.from(byName.values()).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  return Array.from(byName.values())
+    .filter((item) => !deletedNames.has(item.name.toLowerCase()))
+    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 };
 
 export const testimonialDisplayToPayload = (item: TestimonialDisplayItem): AdminContentPayload => ({

@@ -75,16 +75,40 @@ const databaseEventToDisplay = (item: AdminContentItem): EventDisplayItem => ({
   displayOrder: item.display_order || 0,
 });
 
+const deletedEventsKey = "sjr_deleted_events";
+
+export const getDeletedEventTitles = (): string[] => {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(deletedEventsKey) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const markEventTitleDeleted = (title: string) => {
+  try {
+    const current = getDeletedEventTitles();
+    const clean = title.trim().toLowerCase();
+    if (!current.includes(clean)) {
+      current.push(clean);
+      window.localStorage.setItem(deletedEventsKey, JSON.stringify(current));
+    }
+  } catch {}
+};
+
 export const mergeEventItems = (adminEvents: AdminContentItem[] = []) => {
   const byTitle = new Map<string, EventDisplayItem>();
+  const deletedTitles = new Set(getDeletedEventTitles());
+
   homepageEvents.forEach((item) => byTitle.set(item.title.toLowerCase(), item));
   adminEvents.forEach((item) => {
     const displayItem = databaseEventToDisplay(item);
     byTitle.set(displayItem.title.toLowerCase(), displayItem);
   });
-  return Array.from(byTitle.values()).sort(
-    (a, b) => new Date(b.dateValue).getTime() - new Date(a.dateValue).getTime()
-  );
+  return Array.from(byTitle.values())
+    .filter((item) => !deletedTitles.has(item.title.toLowerCase()))
+    .sort((a, b) => new Date(b.dateValue).getTime() - new Date(a.dateValue).getTime());
 };
 
 export const eventDisplayToPayload = (item: EventDisplayItem): AdminContentPayload => ({

@@ -33,9 +33,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { createNewsSlug, mergeNewsItems, newsDisplayToPayload, type NewsDisplayItem } from "@/lib/newsContent";
-import { eventDateLabelToISO, eventDisplayToPayload, mergeEventItems, type EventDisplayItem } from "@/lib/eventContent";
-import { mergeTestimonialItems, testimonialDisplayToPayload, type TestimonialDisplayItem } from "@/lib/testimonialContent";
+import { createNewsSlug, markNewsSlugDeleted, mergeNewsItems, newsDisplayToPayload, type NewsDisplayItem } from "@/lib/newsContent";
+import { eventDateLabelToISO, eventDisplayToPayload, markEventTitleDeleted, mergeEventItems, type EventDisplayItem } from "@/lib/eventContent";
+import { markTestimonialDeleted, mergeTestimonialItems, testimonialDisplayToPayload, type TestimonialDisplayItem } from "@/lib/testimonialContent";
 import { teachers as frontendTeachers, type Teacher } from "@/pages/about/Teachers";
 import { photos as frontendGalleryPhotos } from "@/pages/gallery/PhotoGallery";
 import { videos as frontendGalleryVideos } from "@/pages/gallery/VideoGallery";
@@ -869,12 +869,14 @@ function NewsDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (ite
   }, [adminItems, search]);
 
   const remove = async (item: NewsDisplayItem) => {
-    if (!item.adminItem) return;
-    if (!window.confirm("Are you sure you want to delete this News item?")) return;
+    if (!window.confirm(`Are you sure you want to delete "${item.title}"?`)) return;
     try {
-      await deleteContent("news", item.adminItem.id);
+      if (item.adminItem) {
+        await deleteContent("news", item.adminItem.id);
+      }
+      markNewsSlugDeleted(item.slug);
       await load();
-      toast({ title: "News item deleted" });
+      toast({ title: "News & event deleted successfully" });
     } catch (error) {
       toast({ title: "Unable to delete news", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     }
@@ -952,7 +954,7 @@ function NewsDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (ite
                 <TableCell>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={() => onEdit(item)}>Edit</Button>
-                    <Button variant="destructive" size="sm" disabled={!item.adminItem} title={!item.adminItem ? "Frontend source records are preserved; edit to create a managed database version." : undefined} onClick={() => remove(item)}>
+                    <Button variant="destructive" size="sm" onClick={() => remove(item)}>
                       <Trash2 className="mr-1 h-4 w-4" />
                       Delete
                     </Button>
@@ -1233,12 +1235,14 @@ function EventDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (it
   }, [adminItems, search]);
 
   const remove = async (item: EventDisplayItem) => {
-    if (!item.adminItem) return;
-    if (!window.confirm("Are you sure you want to delete this Event item?")) return;
+    if (!window.confirm(`Are you sure you want to delete "${item.title}"?`)) return;
     try {
-      await deleteContent("event", item.adminItem.id);
+      if (item.adminItem) {
+        await deleteContent("event", item.adminItem.id);
+      }
+      markEventTitleDeleted(item.title);
       await load();
-      toast({ title: "Event deleted" });
+      toast({ title: "Event deleted successfully" });
     } catch (error) {
       toast({ title: "Unable to delete event", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     }
@@ -1300,7 +1304,7 @@ function EventDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (it
                 <TableCell>
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={() => onEdit(item)}>Edit</Button>
-                    <Button variant="destructive" size="sm" disabled={!item.adminItem} title={!item.adminItem ? "Homepage source events are preserved; edit to create a managed database version." : undefined} onClick={() => remove(item)}>
+                    <Button variant="destructive" size="sm" onClick={() => remove(item)}>
                       <Trash2 className="mr-1 h-4 w-4" />
                       Delete
                     </Button>
@@ -1856,13 +1860,15 @@ function TestimonialsPage() {
   };
 
   const remove = async (item: TestimonialDisplayItem) => {
-    if (!item.adminItem) return;
-    if (!window.confirm("Are you sure you want to delete this testimonial?")) return;
+    if (!window.confirm(`Are you sure you want to delete testimonial by ${item.name}?`)) return;
     try {
-      await deleteContent("testimonial", item.adminItem.id);
+      if (item.adminItem) {
+        await deleteContent("testimonial", item.adminItem.id);
+      }
+      markTestimonialDeleted(item.name);
       await load();
-      if (editing?.adminItem?.id === item.adminItem.id) resetForm();
-      toast({ title: "Testimonial deleted" });
+      if (editing?.name === item.name) resetForm();
+      toast({ title: "Testimonial deleted successfully" });
     } catch (error) {
       toast({ title: "Unable to delete testimonial", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     }
@@ -1971,7 +1977,7 @@ function TestimonialsPage() {
                   <TableCell>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => startEdit(item)}>Edit</Button>
-                      <Button variant="destructive" size="sm" disabled={!item.adminItem} title={!item.adminItem ? "Frontend source testimonials are preserved; edit to create a managed database version." : undefined} onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button>
+                      <Button variant="destructive" size="sm" onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -2000,8 +2006,32 @@ const adminTeacherToDisplay = (item: AdminContentItem): Teacher => ({
   displayOrder: item.display_order,
 });
 
+const deletedTeachersKey = "sjr_deleted_teachers";
+
+const getDeletedTeacherNames = (): string[] => {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(deletedTeachersKey) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const markTeacherDeleted = (name: string) => {
+  try {
+    const current = getDeletedTeacherNames();
+    const clean = name.trim().toLowerCase();
+    if (!current.includes(clean)) {
+      current.push(clean);
+      window.localStorage.setItem(deletedTeachersKey, JSON.stringify(current));
+    }
+  } catch {}
+};
+
 const mergeTeacherItems = (adminItems: AdminContentItem[]) => {
   const byName = new Map<string, Teacher>();
+  const deletedNames = new Set(getDeletedTeacherNames());
+
   frontendTeachers.forEach((teacher, index) => byName.set(teacher.name.toLowerCase(), {
     ...teacher,
     source: "frontend",
@@ -2013,7 +2043,9 @@ const mergeTeacherItems = (adminItems: AdminContentItem[]) => {
     const teacher = adminTeacherToDisplay(item);
     byName.set(teacher.name.toLowerCase(), teacher);
   });
-  return Array.from(byName.values()).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  return Array.from(byName.values())
+    .filter((t) => !deletedNames.has(t.name.toLowerCase()))
+    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 };
 
 const teacherToPayload = (teacher: Teacher, displayOrder = teacher.displayOrder || 0): AdminContentPayload => ({
@@ -2140,12 +2172,14 @@ function TeachersViewPage({ onAdd, onEdit, onDirtyChange }: { onAdd: () => void;
   };
 
   const remove = async (teacher: Teacher) => {
-    if (!teacher.adminId) return;
-    if (!window.confirm("Are you sure you want to delete this teacher?")) return;
+    if (!window.confirm(`Are you sure you want to delete ${teacher.name}?`)) return;
     try {
-      await deleteContent("teacher", teacher.adminId);
+      if (teacher.adminId) {
+        await deleteContent("teacher", teacher.adminId);
+      }
+      markTeacherDeleted(teacher.name);
       await load();
-      toast({ title: "Teacher deleted" });
+      toast({ title: "Teacher deleted successfully" });
     } catch (error) {
       toast({ title: "Unable to delete teacher", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     }
@@ -2204,7 +2238,7 @@ function TeachersViewPage({ onAdd, onEdit, onDirtyChange }: { onAdd: () => void;
                 <Button variant="outline" size="sm" onClick={() => toggleFeatured(teacher)} className={teacher.isFeatured ? "border-amber-300 text-amber-700" : ""}>{teacher.isFeatured ? "Featured" : "Feature"}</Button>
                 <Badge variant="outline" className={teacher.isVisible !== false ? "border-green-200 bg-green-50 text-green-700" : "border-slate-200 bg-slate-100 text-slate-600"}>{teacher.isVisible !== false ? "Published" : "Draft"}</Badge>
                 <Button variant="ghost" size="sm" onClick={() => onEdit(teacher)}>Edit</Button>
-                <Button variant="ghost" size="sm" disabled={!teacher.adminId} title={!teacher.adminId ? "Frontend source teachers are preserved; edit to create a managed database version." : undefined} onClick={() => remove(teacher)} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => remove(teacher)} className="text-red-600"><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
           ))}
