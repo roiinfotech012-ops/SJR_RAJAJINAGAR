@@ -35,7 +35,7 @@ try {
     echo json_encode([
         'status' => 'success',
         'message' => 'PostgreSQL database connected successfully!',
-        'host' => '168.119.64.101',
+        'host' => getenv("PGHOST") ?: (getenv("DB_HOST") ?: "localhost"),
         'port' => 5432,
         'database' => 'sjrsr258_sjrpsraj',
         'server_version' => $serverVersion,

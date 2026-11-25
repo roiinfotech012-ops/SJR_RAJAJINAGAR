@@ -7,7 +7,7 @@
 
 function OpenCon()
 {
-    $dbhost = getenv("PGHOST") ?: "168.119.64.101";
+    $dbhost = getenv("PGHOST") ?: (getenv("DB_HOST") ?: "localhost");
     $dbport = getenv("PGPORT") ?: "5432";
     $dbuser = getenv("PGUSER") ?: "sjrsr258_sjrpsraj";
     $dbpass = getenv("PGPASSWORD") ?: "+7v#qvBj9Y*!L9-N&S";

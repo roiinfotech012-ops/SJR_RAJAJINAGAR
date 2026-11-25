@@ -24,7 +24,7 @@ try {
 } catch (e) {}
 
 const client = new Client({
-  host: process.env.PGHOST || '168.119.64.101',
+  host: process.env.PGHOST || process.env.DB_HOST || 'localhost',
   port: Number(process.env.PGPORT) || 5432,
   database: process.env.PGDATABASE || 'sjrsr258_sjrpsraj',
   user: process.env.PGUSER || 'sjrsr258_sjrpsraj',
