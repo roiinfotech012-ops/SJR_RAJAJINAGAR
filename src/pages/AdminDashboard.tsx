@@ -215,9 +215,9 @@ function AdminLogin({ onLogin }: { onLogin: (user: AdminUser) => void }) {
       <div className="grid min-h-screen lg:grid-cols-[1fr_540px]">
         <div className="hidden bg-[#137a49] p-12 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="flex items-center gap-4">
-            <img src={sjreLogo} alt="SJRPS-HBR" className="h-16 w-16 rounded-full bg-white p-1" />
+            <img src={sjreLogo} alt="SJR Public School - Rajajinagar" className="h-16 w-16 rounded-full bg-white p-1 shrink-0" />
             <div>
-              <h1 className="text-3xl font-bold">SJRPS-HBR Admin</h1>
+              <h1 className="text-2xl lg:text-3xl font-bold">SJR PUBLIC SCHOOL - RAJAJINAGAR Admin</h1>
               <p className="text-white/80">Content and enquiry management</p>
             </div>
           </div>
@@ -229,10 +229,10 @@ function AdminLogin({ onLogin }: { onLogin: (user: AdminUser) => void }) {
         <div className="flex items-center justify-center px-6 py-12">
           <form action="" onSubmit={submit} className="w-full max-w-md rounded-lg border border-[#e5ded4] bg-white p-8 shadow-sm">
             <div className="mb-8 flex items-center gap-3">
-              <img src={sjreLogo} alt="SJRPS-HBR" className="h-14 w-14 rounded-full border border-[#e5ded4] object-contain p-1" />
+              <img src={sjreLogo} alt="SJR Public School - Rajajinagar" className="h-14 w-14 rounded-full border border-[#e5ded4] object-contain p-1" />
               <div>
                 <h2 className="text-2xl font-bold">Admin Login</h2>
-                <p className="text-sm text-[#6e4a3b]">SJR Public School - HBR Layout</p>
+                <p className="text-sm text-[#6e4a3b]">SJR Public School - Rajajinagar</p>
               </div>
             </div>
             <div className="space-y-5">
@@ -2370,9 +2370,9 @@ const AdminDashboard = () => {
       <div className="flex h-full min-h-0">
         <aside className={`fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-[#e8e0d7] bg-[#f1eee9] transition-transform lg:static lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
           <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-[#e8e0d7] bg-white px-3">
-            <img src={sjreLogo} alt="SJRPS-HBR" className="h-9 w-9 rounded-full border border-[#e5ded4] object-contain p-1" />
+            <img src={sjreLogo} alt="SJRPS Rajajinagar" className="h-9 w-9 rounded-full border border-[#e5ded4] object-contain p-1" />
             <div className="min-w-0">
-              <h1 className="truncate text-[15px] font-bold text-[#3b241d]">SJRHBR Admin</h1>
+              <h1 className="truncate text-[15px] font-bold text-[#3b241d]">SJRPS Rajajinagar</h1>
               <p className="text-xs text-[#6e4a3b]">Content Manager</p>
             </div>
             <button className="ml-auto lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X className="h-5 w-5" /></button>
