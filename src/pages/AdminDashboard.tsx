@@ -261,9 +261,9 @@ const titleForSection = (section: Section) =>
     dashboard: "Dashboard",
     "home-enquiries": "Home Enquiries",
     "contact-enquiries": "Contact Enquiries",
-    "news-add": "Add News",
-    "news-edit": "Edit News",
-    "news-list": "News Details",
+    "news-add": "Add News & Events",
+    "news-edit": "Edit News & Event",
+    "news-list": "View News & Events",
     "event-add": "Add Event",
     "event-edit": "Edit Event",
     "event-list": "View Events",
@@ -886,7 +886,7 @@ function NewsDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (ite
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[26px] font-bold text-[#4a2b22]">News & Events Details</h1>
+          <h1 className="text-[26px] font-bold text-[#4a2b22]">View News & Events</h1>
           <p className="mt-1 text-sm text-[#6e4a3b]">
             Showing all news and events currently published or drafted for the website.
           </p>
@@ -2433,8 +2433,8 @@ const AdminDashboard = () => {
               <NavButton nested active={section === "contact-enquiries"} icon={Mail} label="Contact" onClick={() => go("contact-enquiries")} />
             </NavGroup>
             <NavGroup id="news" icon={Newspaper} label="News & Events" active={isActive("news-add", "news-edit", "news-list", "event-add", "event-edit", "event-list")} open={openGroup === "news"} onToggle={toggleGroup}>
-              <NavButton nested active={isActive("news-list", "news-edit", "event-list", "event-edit")} icon={Newspaper} label="News & Events Details" onClick={() => go("news-list")} />
               <NavButton nested active={section === "news-add" || section === "event-add"} icon={FilePlus} label="Add News & Events" onClick={() => go("news-add")} />
+              <NavButton nested active={isActive("news-list", "news-edit", "event-list", "event-edit")} icon={Newspaper} label="View News & Events" onClick={() => go("news-list")} />
             </NavGroup>
             <NavGroup id="gallery" icon={GalleryHorizontal} label="Gallery" active={isActive("gallery-images", "gallery-videos")} open={openGroup === "gallery"} onToggle={toggleGroup}>
               <NavButton nested active={section === "gallery-images"} icon={Images} label="Add Images" onClick={() => go("gallery-images")} />
@@ -2444,8 +2444,8 @@ const AdminDashboard = () => {
               <NavButton nested active={section === "testimonial-add"} icon={FilePlus} label="Add Testimonials" onClick={() => go("testimonial-add")} />
             </NavGroup>
             <NavGroup id="teachers" icon={Users} label="Teachers" active={isActive("teacher-add", "teacher-list")} open={openGroup === "teachers"} onToggle={toggleGroup}>
-              <NavButton nested active={section === "teacher-list"} icon={Users} label="View" onClick={() => go("teacher-list")} />
               <NavButton nested active={section === "teacher-add"} icon={FilePlus} label="Add New" onClick={() => go("teacher-add")} />
+              <NavButton nested active={section === "teacher-list"} icon={Users} label="View" onClick={() => go("teacher-list")} />
             </NavGroup>
           </nav>
           <div className="shrink-0 border-t border-[#e8e0d7] bg-[#f1eee9] p-2.5">
