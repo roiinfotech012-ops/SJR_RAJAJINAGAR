@@ -16,7 +16,17 @@ export type Video = {
   thumbnail?: string;
 };
 
-export const videos: Video[] = [];
+export const videos: Video[] = [
+  {
+    id: "sjrps-rajajinagar-campus-film",
+    title: "SJR Public School, Rajajinagar — Campus Tour & Highlights",
+    description: "Experience our state-of-the-art campus, dedicated faculty, and dynamic student life at SJR Public School, Rajajinagar.",
+    category: "Campus & Activities",
+    date: "14/10/2026",
+    videoUrl: "/videos/sjrps-rajajinagar.mp4",
+    thumbnail: "/images/Photos/School Building/school-building-main-gate.jpg",
+  },
+];
 
 function getYoutubeId(value: unknown) {
   const text = typeof value === "string" ? value.trim() : "";

@@ -7,6 +7,8 @@ export const ENQUIRY_STATUSES = [
   "Admitted",
 ] as const;
 
+import { allSchoolPhotos } from "@/data/galleryPhotos";
+
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 export type EnquirySource = "home" | "contact";
 
@@ -211,14 +213,55 @@ const initialNewsContent: AdminContentItem[] = [
   }
 ];
 
+const initialGalleryContent: AdminContentItem[] = allSchoolPhotos.map((photo, index) => ({
+  id: photo.id,
+  type: "gallery",
+  title: photo.title,
+  subtitle: photo.eventTitle || photo.categoryLabel,
+  body: photo.eventTitle || "",
+  image_url: photo.src,
+  category: photo.category,
+  is_visible: true,
+  display_order: index + 1,
+  fields: {
+    originalFilename: photo.originalFilename,
+    eventTitle: photo.eventTitle,
+    categoryLabel: photo.categoryLabel,
+  },
+  created_at: "2026-10-01T00:00:00Z",
+  updated_at: "2026-10-01T00:00:00Z",
+}));
+
+const initialVideoContent: AdminContentItem[] = [
+  {
+    id: "sjrps-rajajinagar-campus-film",
+    type: "video",
+    title: "SJR Public School, Rajajinagar — Campus Tour & Highlights",
+    subtitle: "Campus & Activities",
+    body: "Experience our state-of-the-art campus, dedicated faculty, and dynamic student life at SJR Public School, Rajajinagar.",
+    image_url: "/videos/sjrps-rajajinagar.mp4",
+    category: "campus",
+    published_at: "2026-10-14T00:00:00Z",
+    is_visible: true,
+    display_order: 1,
+    fields: {
+      videoUrl: "/videos/sjrps-rajajinagar.mp4",
+      thumbnail: "/images/Photos/School Building/school-building-main-gate.jpg",
+      isLocalVideo: true,
+    },
+    created_at: "2026-10-14T00:00:00Z",
+    updated_at: "2026-10-14T00:00:00Z",
+  },
+];
+
 const emptyStaticData = (): StaticData => ({
   enquiries: [],
   followUps: [],
   content: {
     news: initialNewsContent,
     event: [],
-    gallery: [],
-    video: [],
+    gallery: initialGalleryContent,
+    video: initialVideoContent,
     testimonial: [],
     teacher: [],
   },
@@ -241,8 +284,8 @@ function readStaticData(): StaticData {
       content: {
         news: Array.isArray(parsed.content?.news) && parsed.content.news.length > 0 ? parsed.content.news : initialNewsContent,
         event: Array.isArray(parsed.content?.event) ? parsed.content.event : [],
-        gallery: Array.isArray(parsed.content?.gallery) ? parsed.content.gallery : [],
-        video: Array.isArray(parsed.content?.video) ? parsed.content.video : [],
+        gallery: Array.isArray(parsed.content?.gallery) && parsed.content.gallery.length > 0 ? parsed.content.gallery : initialGalleryContent,
+        video: Array.isArray(parsed.content?.video) && parsed.content.video.length > 0 ? parsed.content.video : initialVideoContent,
         testimonial: Array.isArray(parsed.content?.testimonial) ? parsed.content.testimonial : [],
         teacher: Array.isArray(parsed.content?.teacher) ? parsed.content.teacher : [],
       },

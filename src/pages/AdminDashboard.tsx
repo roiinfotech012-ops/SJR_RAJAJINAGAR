@@ -1512,12 +1512,33 @@ function GalleryImagePage() {
   useEffect(() => { load(); }, [load]);
 
   const categories = useMemo(() => {
+    const defaultCats = [
+      { id: "events", label: "Events" },
+      { id: "campus", label: "Campus & Facilities" },
+      { id: "classroom", label: "Classrooms" },
+      { id: "labs", label: "Labs & STEM" },
+      { id: "sports", label: "Sports & Activities" },
+      { id: "cultural", label: "Cultural & Arts" },
+      { id: "heritage", label: "Our Heritage" },
+    ];
     const grouped = new Map<string, number>();
     items.forEach((item) => {
       const category = item.category || "gallery";
       grouped.set(category, (grouped.get(category) || 0) + 1);
     });
-    return Array.from(grouped.entries()).map(([id, count]) => ({ id, label: `${categoryLabel(id)} (${count})` }));
+
+    const result = defaultCats.map((cat) => ({
+      id: cat.id,
+      label: `${cat.label} (${grouped.get(cat.id) || 0})`,
+    }));
+
+    grouped.forEach((count, id) => {
+      if (!defaultCats.some((d) => d.id === id)) {
+        result.push({ id, label: `${categoryLabel(id)} (${count})` });
+      }
+    });
+
+    return result;
   }, [items]);
 
   useEffect(() => {
@@ -1666,26 +1687,36 @@ function GalleryVideoPage() {
   useEffect(() => { load(); }, [load]);
 
   const categories = useMemo(() => {
+    const defaultCats = [
+      { id: "campus", label: "Campus & Activities" },
+      { id: "events", label: "School Events" },
+      { id: "sports", label: "Sports & Athletics" },
+      { id: "cultural", label: "Cultural Celebrations" },
+    ];
     const grouped = new Map<string, number>();
-    galleryItems.forEach((item) => {
-      const category = item.category || "gallery";
+    videos.forEach((item) => {
+      const category = item.category || "campus";
       grouped.set(category, (grouped.get(category) || 0) + 1);
     });
-    return Array.from(grouped.entries()).map(([id, count]) => ({ id, label: `${categoryLabel(id)} (${count})` }));
-  }, [galleryItems]);
+    return defaultCats.map((cat) => ({
+      id: cat.id,
+      label: `${cat.label} (${grouped.get(cat.id) || 0})`,
+    }));
+  }, [videos]);
 
   useEffect(() => {
     if (!selectedCategory && categories[0]) setSelectedCategory(categories[0].id);
   }, [categories, selectedCategory]);
 
   const save = async () => {
+    const isDirectVideo = videoUrl.trim().endsWith(".mp4") || videoUrl.trim().startsWith("/videos/");
     const youtubeId = getYoutubeIdFromUrl(videoUrl);
     if (!selectedCategory) {
       toast({ title: "Choose a category", description: "Select an existing gallery category before saving.", variant: "destructive" });
       return;
     }
-    if (!youtubeId) {
-      toast({ title: "Add a YouTube URL", description: "Paste a valid YouTube video URL or ID.", variant: "destructive" });
+    if (!youtubeId && !isDirectVideo) {
+      toast({ title: "Add a valid video URL", description: "Paste a valid YouTube video URL or MP4 video path.", variant: "destructive" });
       return;
     }
 
@@ -1699,12 +1730,16 @@ function GalleryVideoPage() {
         category: selectedCategory,
         is_visible: true,
         display_order: videos.length + 1,
-        fields: { youtubeId },
+        fields: {
+          youtubeId: isDirectVideo ? "" : youtubeId,
+          isDirectVideo,
+          thumbnail: isDirectVideo ? "/images/Photos/School Building/school-building-main-gate.jpg" : undefined,
+        },
       });
       setVideoUrl("");
       setTitle("");
       await load();
-      toast({ title: "Video added" });
+      toast({ title: "Video added successfully" });
     } catch (error) {
       toast({ title: "Unable to save video", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     } finally {
@@ -1717,7 +1752,7 @@ function GalleryVideoPage() {
     try {
       await deleteContent("video", item.id);
       await load();
-      toast({ title: "Video deleted" });
+      toast({ title: "Video deleted successfully" });
     } catch (error) {
       toast({ title: "Unable to delete video", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     }
@@ -1727,7 +1762,7 @@ function GalleryVideoPage() {
     <div>
       <div className="mb-7">
         <h1 className="text-[26px] font-bold text-[#4a2b22]">Add Videos</h1>
-        <p className="mt-1 text-sm text-[#6e4a3b]">Add videos to the Video Gallery by URL. No file upload needed.</p>
+        <p className="mt-1 text-sm text-[#6e4a3b]">Add videos to the Video Gallery by YouTube URL or video path.</p>
       </div>
 
       <div className="max-w-5xl space-y-7">
@@ -1746,15 +1781,15 @@ function GalleryVideoPage() {
           <h2 className="text-lg font-bold">2. Add a video</h2>
           <div className="mt-7 grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="video-url">YouTube Video URL</Label>
-              <Input id="video-url" value={videoUrl} onChange={(event) => setVideoUrl(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+              <Label htmlFor="video-url">Video URL (YouTube or MP4)</Label>
+              <Input id="video-url" value={videoUrl} onChange={(event) => setVideoUrl(event.target.value)} placeholder="https://www.youtube.com/watch?v=... or /videos/..." />
             </div>
             <div className="space-y-2">
               <Label htmlFor="video-title">Title (optional)</Label>
               <Input id="video-title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Annual Day Highlights" />
             </div>
           </div>
-          <p className="mt-3 text-xs text-[#6e4a3b]">The thumbnail is fetched automatically from YouTube, matching the frontend video gallery.</p>
+          <p className="mt-3 text-xs text-[#6e4a3b]">Thumbnails are automatically loaded from YouTube or campus media.</p>
           <Button onClick={save} disabled={isSaving} className="mt-5 bg-[#137a49] hover:bg-[#0f663d]">Add Video</Button>
         </div>
 
@@ -1763,13 +1798,23 @@ function GalleryVideoPage() {
           <div className="mt-7 grid gap-4 md:grid-cols-3">
             {videos.filter((item) => (item.category || selectedCategory) === selectedCategory || (!item.category && selectedCategory)).map((item) => {
               const youtubeId = getYoutubeIdFromUrl(String(item.fields?.youtubeId || item.image_url || item.title));
+              const isDirectVideo = item.image_url && /\.(mp4|webm|mov)$/i.test(item.image_url);
+              const thumbUrl = (item.fields?.thumbnail as string) || (youtubeId && !isDirectVideo ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : "/placeholder.svg");
+
               return (
                 <div key={item.id} className="overflow-hidden rounded-lg border border-[#e5ded4]">
-                  <img src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`} alt="" className="h-36 w-full object-cover" />
+                  {isDirectVideo ? (
+                    <video src={item.image_url} poster={thumbUrl} controls preload="metadata" className="h-40 w-full bg-black object-contain" />
+                  ) : (
+                    <img src={thumbUrl} alt="" className="h-40 w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }} />
+                  )}
                   <div className="space-y-3 p-4">
-                    <p className="line-clamp-2 font-semibold">{item.title || "Untitled video"}</p>
-                    <Badge variant="outline" className={item.is_visible ? "border-green-200 bg-green-50 text-green-700" : "border-slate-200 bg-slate-100 text-slate-600"}>{item.is_visible ? "Published" : "Draft"}</Badge>
-                    <Button variant="outline" className="w-full" onClick={() => remove(item)}><Trash2 className="mr-2 h-4 w-4" />Delete</Button>
+                    <p className="line-clamp-2 font-semibold text-[#3b241d]">{item.title || "Untitled video"}</p>
+                    <p className="text-xs text-[#6e4a3b]">{item.subtitle || categoryLabel(item.category || "campus")}</p>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className={item.is_visible ? "border-green-200 bg-green-50 text-green-700" : "border-slate-200 bg-slate-100 text-slate-600"}>{item.is_visible ? "Published" : "Draft"}</Badge>
+                      <Button variant="destructive" size="sm" onClick={() => remove(item)}><Trash2 className="mr-1 h-4 w-4" />Delete</Button>
+                    </div>
                   </div>
                 </div>
               );
