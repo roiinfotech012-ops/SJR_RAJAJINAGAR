@@ -15,6 +15,7 @@ export type TestimonialDisplayItem = {
   imageAlt?: string;
   language?: "en" | "kn";
   subheadings?: { title: string; text: string }[];
+  featured?: boolean;
   isVisible: boolean;
   displayOrder: number;
 };
@@ -32,22 +33,34 @@ const frontendTestimonials: TestimonialDisplayItem[] = authenticTestimonials.map
   quote: t.quote,
   language: t.language,
   subheadings: t.subheadings,
+  featured: t.featured !== false,
   isVisible: true,
   displayOrder: idx + 1,
 }));
 
-const databaseTestimonialToDisplay = (item: AdminContentItem): TestimonialDisplayItem => ({
-  key: `database-${item.id}`,
-  source: "database",
-  adminItem: item,
-  name: item.title,
-  role: item.subtitle || "",
-  category: item.category || "Parent",
-  quote: item.body || "",
-  image: item.image_url || "/placeholder.svg",
-  isVisible: item.is_visible,
-  displayOrder: item.display_order || 0,
-});
+const databaseTestimonialToDisplay = (item: AdminContentItem): TestimonialDisplayItem => {
+  const childName = (item.fields?.childName as string) || "";
+  const className = (item.fields?.className as string) || "";
+  const role = item.subtitle || (childName ? `Parent of ${childName}${className ? ` (${className})` : ""}` : "");
+  return {
+    key: `database-${item.id}`,
+    source: "database",
+    adminItem: item,
+    name: item.title,
+    role,
+    childName,
+    className,
+    category: item.category || "Parent",
+    quote: item.body || "",
+    image: item.image_url || "/placeholder.svg",
+    imageAlt: (item.fields?.imageAlt as string) || `Portrait of parent ${item.title}`,
+    language: (item.fields?.language as "en" | "kn") || "en",
+    subheadings: (item.fields?.subheadings as { title: string; text: string }[]) || [],
+    featured: item.fields?.featured !== false,
+    isVisible: item.is_visible,
+    displayOrder: item.display_order || 0,
+  };
+};
 
 const deletedTestimonialsKey = "sjr_deleted_testimonials";
 
@@ -87,12 +100,20 @@ export const mergeTestimonialItems = (adminTestimonials: AdminContentItem[] = []
 
 export const testimonialDisplayToPayload = (item: TestimonialDisplayItem): AdminContentPayload => ({
   title: item.name,
-  subtitle: item.role,
+  subtitle: item.role || (item.childName ? `Parent of ${item.childName}${item.className ? ` (${item.className})` : ""}` : ""),
   body: item.quote,
   image_url: item.image === "/placeholder.svg" ? "" : item.image,
-  category: item.category,
+  category: item.category || "Parent",
   published_at: "",
   is_visible: item.isVisible,
   display_order: item.displayOrder,
-  fields: item.adminItem?.fields || {},
+  fields: {
+    childName: item.childName || "",
+    className: item.className || "",
+    language: item.language || "en",
+    imageAlt: item.imageAlt || `Portrait of parent ${item.name}`,
+    featured: item.featured !== false,
+    subheadings: item.subheadings || [],
+    ...(item.adminItem?.fields || {}),
+  },
 });

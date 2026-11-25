@@ -92,6 +92,8 @@ type Section =
   | "gallery-images"
   | "gallery-videos"
   | "testimonial-add"
+  | "testimonial-edit"
+  | "testimonial-list"
   | "teacher-add"
   | "teacher-list";
 type NavGroupId = "enquiries" | "news" | "events" | "gallery" | "testimonials" | "teachers";
@@ -154,6 +156,8 @@ const sectionFromAdminPath = (pathname: string): Section => {
   if (pathname.startsWith("/admin/gallery/add-videos") || pathname.startsWith("/admin/gallery/videos")) return "gallery-videos";
   if (pathname.startsWith("/admin/gallery/add-images") || pathname.startsWith("/admin/gallery/photos")) return "gallery-images";
   if (pathname.startsWith("/admin/testimonials/add")) return "testimonial-add";
+  if (pathname.startsWith("/admin/testimonials/edit")) return "testimonial-edit";
+  if (pathname.startsWith("/admin/testimonials")) return "testimonial-list";
   if (pathname.startsWith("/admin/teachers/add")) return "teacher-add";
   if (pathname.startsWith("/admin/teachers")) return "teacher-list";
   return "dashboard";
@@ -171,6 +175,8 @@ const adminPathForSection = (section: Section) => {
   if (section === "gallery-images") return "/admin/gallery/add-images";
   if (section === "gallery-videos") return "/admin/gallery/add-videos";
   if (section === "testimonial-add") return "/admin/testimonials/add";
+  if (section === "testimonial-edit") return "/admin/testimonials/edit";
+  if (section === "testimonial-list") return "/admin/testimonials";
   if (section === "teacher-add") return "/admin/teachers/add";
   if (section === "teacher-list") return "/admin/teachers";
   return "/admin";
@@ -181,7 +187,7 @@ const groupForSection = (section: Section): NavGroupId | null => {
   if (section === "news-add" || section === "news-edit" || section === "news-list") return "news";
   if (section === "event-add" || section === "event-edit" || section === "event-list") return "events";
   if (section === "gallery-images" || section === "gallery-videos") return "gallery";
-  if (section === "testimonial-add") return "testimonials";
+  if (section === "testimonial-add" || section === "testimonial-edit" || section === "testimonial-list") return "testimonials";
   if (section === "teacher-add" || section === "teacher-list") return "teachers";
   return null;
 };
@@ -270,6 +276,8 @@ const titleForSection = (section: Section) =>
     "gallery-images": "Add Images",
     "gallery-videos": "Add Videos",
     "testimonial-add": "Add Testimonials",
+    "testimonial-edit": "Edit Testimonial",
+    "testimonial-list": "View Testimonials",
     "teacher-add": "Add New Teacher",
     "teacher-list": "View Teachers",
   }[section]);
@@ -1827,82 +1835,38 @@ function GalleryVideoPage() {
   );
 }
 
-function TestimonialsPage() {
+function TestimonialsListPage({
+  onAdd,
+  onEdit,
+}: {
+  onAdd: () => void;
+  onEdit: (item: TestimonialDisplayItem) => void;
+}) {
   const { toast } = useToast();
   const [adminItems, setAdminItems] = useState<AdminContentItem[]>([]);
-  const [editing, setEditing] = useState<TestimonialDisplayItem | null>(null);
-  const [form, setForm] = useState<AdminContentPayload>({ ...emptyPayload, category: "Parent" });
-  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
+    setIsLoading(true);
     try {
       const result = await getContent("testimonial");
       setAdminItems(result.items);
     } catch (error) {
-      toast({ title: "Unable to load testimonials", description: error instanceof Error ? error.message : "Check API/database configuration.", variant: "destructive" });
+      toast({ title: "Unable to load testimonials", description: error instanceof Error ? error.message : "Check configuration.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   }, [toast]);
 
   useEffect(() => { load(); }, [load]);
 
-  const testimonials = useMemo(() => mergeTestimonialItems(adminItems), [adminItems]);
-
-  const resetForm = () => {
-    setEditing(null);
-    setForm({ ...emptyPayload, category: "Parent", display_order: testimonials.length + 1 });
-  };
-
-  useEffect(() => {
-    if (!editing && !form.display_order) setForm((current) => ({ ...current, display_order: testimonials.length + 1 }));
-  }, [editing, form.display_order, testimonials.length]);
-
-  const startEdit = (item: TestimonialDisplayItem) => {
-    setEditing(item);
-    setForm(testimonialDisplayToPayload(item));
-  };
-
-  const choosePhoto = async (files: FileList | null) => {
-    const file = Array.from(files || []).find((candidate) => candidate.type.startsWith("image/"));
-    if (!file) return;
-    try {
-      const [image] = await readImageFiles([file]);
-      setForm((current) => ({ ...current, image_url: image.src }));
-    } catch (error) {
-      toast({ title: "Unable to process photo", description: error instanceof Error ? error.message : "Please try a different image file.", variant: "destructive" });
-    }
-  };
-
-  const save = async (publish: boolean) => {
-    if (!form.title?.trim() || !form.body?.trim()) {
-      toast({ title: "Complete required fields", description: "Person name and testimonial content are required.", variant: "destructive" });
-      return;
-    }
-
-    const payload: AdminContentPayload = {
-      ...form,
-      title: form.title.trim(),
-      subtitle: form.subtitle?.trim() || "",
-      body: form.body.trim(),
-      image_url: form.image_url || "",
-      category: form.category || "Parent",
-      is_visible: publish,
-      display_order: Number(form.display_order || testimonials.length + 1),
-      fields: form.fields || {},
-    };
-
-    setIsSaving(true);
-    try {
-      if (editing?.adminItem) await updateContent("testimonial", editing.adminItem.id, payload);
-      else await createContent("testimonial", payload);
-      await load();
-      resetForm();
-      toast({ title: publish ? "Testimonial published" : "Testimonial saved as draft" });
-    } catch (error) {
-      toast({ title: "Unable to save testimonial", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const testimonials = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return mergeTestimonialItems(adminItems).filter((item) =>
+      [item.name, item.childName, item.className, item.quote, item.category].join(" ").toLowerCase().includes(query)
+    );
+  }, [adminItems, search]);
 
   const remove = async (item: TestimonialDisplayItem) => {
     if (!window.confirm(`Are you sure you want to delete testimonial by ${item.name}?`)) return;
@@ -1912,7 +1876,6 @@ function TestimonialsPage() {
       }
       markTestimonialDeleted(item.name);
       await load();
-      if (editing?.name === item.name) resetForm();
       toast({ title: "Testimonial deleted successfully" });
     } catch (error) {
       toast({ title: "Unable to delete testimonial", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
@@ -1921,114 +1884,358 @@ function TestimonialsPage() {
 
   return (
     <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#4a2b22]">View Testimonials</h1>
+          <p className="mt-1 text-sm text-[#6e4a3b]">
+            Showing all authentic parent and student testimonials currently published or managed for the website.
+          </p>
+        </div>
+        <Button onClick={onAdd} className="bg-[#137a49] hover:bg-[#0f663d]">
+          <FilePlus className="mr-2 h-4 w-4" />
+          Add Testimonials
+        </Button>
+      </div>
+
+      <div className="mt-6 rounded-lg border border-[#e5ded4] bg-white">
+        <div className="border-b border-[#e5ded4] p-5">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#6e4a3b]" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by parent, student, class, or feedback..." className="pl-9" />
+          </div>
+        </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Photo</TableHead>
+              <TableHead>Parent / Contributor</TableHead>
+              <TableHead>Student & Class</TableHead>
+              <TableHead>Language</TableHead>
+              <TableHead>Quote Preview</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow><TableCell colSpan={7} className="py-10 text-center">Loading testimonials...</TableCell></TableRow>
+            ) : testimonials.length === 0 ? (
+              <TableRow><TableCell colSpan={7} className="py-10 text-center">No testimonials found.</TableCell></TableRow>
+            ) : testimonials.map((item) => (
+              <TableRow key={item.key}>
+                <TableCell>
+                  <div className="h-12 w-12 rounded-full p-[2px] bg-gradient-to-tr from-[#137a49] to-[#e87722]">
+                    <img
+                      src={item.image || "/placeholder.svg"}
+                      alt=""
+                      className="h-full w-full rounded-full object-cover object-top bg-slate-100"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="font-semibold text-[#3b241d]">{item.name}</TableCell>
+                <TableCell>
+                  <p className="text-xs font-medium text-[#22130f]">{item.childName ? `Parent of ${item.childName}` : "-"}</p>
+                  {item.className && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-[#137a49]/10 text-[#137a49] mt-0.5">
+                      <GraduationCap className="h-3 w-3" />
+                      {item.className}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={item.language === "kn" ? "border-amber-300 bg-amber-50 text-amber-800" : "border-slate-200 bg-slate-50 text-slate-700"}>
+                    {item.language === "kn" ? "Kannada" : "English"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="max-w-xs truncate text-xs text-[#6e4a3b]">{item.quote}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant="outline" className={item.isVisible ? "border-green-200 bg-green-50 text-green-700" : "border-slate-200 bg-slate-100 text-slate-600"}>
+                      {item.isVisible ? "Published" : "Draft"}
+                    </Badge>
+                    {item.featured && (
+                      <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800 text-[10px]">
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => onEdit(item)}>Edit</Button>
+                    <Button variant="destructive" size="sm" onClick={() => remove(item)}>
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function TestimonialFormPage({
+  editing,
+  onCancel,
+  onSaved,
+}: {
+  editing: TestimonialDisplayItem | null;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const initialPayload = useMemo(() => (editing ? testimonialDisplayToPayload(editing) : {
+    ...emptyPayload,
+    category: "Parent",
+    fields: {
+      childName: "",
+      className: "",
+      language: "en",
+      featured: true,
+    },
+  }), [editing]);
+
+  const [parentName, setParentName] = useState(() => initialPayload.title || "");
+  const [childName, setChildName] = useState(() => (initialPayload.fields?.childName as string) || "");
+  const [className, setClassName] = useState(() => (initialPayload.fields?.className as string) || "");
+  const [language, setLanguage] = useState<"en" | "kn">(() => (initialPayload.fields?.language as "en" | "kn") || "en");
+  const [category, setCategory] = useState(() => initialPayload.category || "Parent");
+  const [quote, setQuote] = useState(() => initialPayload.body || "");
+  const [imageUrl, setImageUrl] = useState(() => initialPayload.image_url || "");
+  const [featured, setFeatured] = useState(() => initialPayload.fields?.featured !== false);
+  const [isVisible, setIsVisible] = useState(() => initialPayload.is_visible !== false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setParentName(initialPayload.title || "");
+    setChildName((initialPayload.fields?.childName as string) || "");
+    setClassName((initialPayload.fields?.className as string) || "");
+    setLanguage((initialPayload.fields?.language as "en" | "kn") || "en");
+    setCategory(initialPayload.category || "Parent");
+    setQuote(initialPayload.body || "");
+    setImageUrl(initialPayload.image_url || "");
+    setFeatured(initialPayload.fields?.featured !== false);
+    setIsVisible(initialPayload.is_visible !== false);
+  }, [initialPayload]);
+
+  const choosePhoto = async (files: FileList | null) => {
+    const file = Array.from(files || []).find((c) => c.type.startsWith("image/"));
+    if (!file) return;
+    try {
+      const [img] = await readImageFiles([file]);
+      setImageUrl(img.src);
+    } catch (error) {
+      toast({ title: "Unable to process photo", description: error instanceof Error ? error.message : "Please try a different image.", variant: "destructive" });
+    }
+  };
+
+  const save = async (publish: boolean) => {
+    if (!parentName.trim() || !quote.trim()) {
+      toast({ title: "Complete required fields", description: "Parent name and testimonial content are required.", variant: "destructive" });
+      return;
+    }
+
+    const subtitle = `Parent of ${childName.trim()}${className.trim() ? ` (${className.trim()})` : ""}`;
+    const payload: AdminContentPayload = {
+      title: parentName.trim(),
+      subtitle,
+      body: quote.trim(),
+      image_url: imageUrl || "/placeholder.svg",
+      category,
+      is_visible: publish,
+      display_order: editing?.displayOrder || 1,
+      fields: {
+        childName: childName.trim(),
+        className: className.trim(),
+        language,
+        featured,
+        imageAlt: `Portrait of parent ${parentName.trim()}`,
+      },
+    };
+
+    setIsSaving(true);
+    try {
+      if (editing?.adminItem) {
+        await updateContent("testimonial", editing.adminItem.id, payload);
+      } else {
+        await createContent("testimonial", payload);
+      }
+      toast({ title: editing ? "Testimonial updated successfully" : (publish ? "Testimonial published successfully" : "Testimonial saved as draft") });
+      onSaved();
+    } catch (error) {
+      toast({ title: "Unable to save testimonial", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div>
       <div className="mb-6">
-        <h1 className="text-[26px] font-bold text-[#4a2b22]">Testimonials</h1>
-        <p className="mt-1 text-sm text-[#6e4a3b]">Add parent/student testimonials shown on the website.</p>
+        <h1 className="text-[26px] font-bold text-[#4a2b22]">{editing ? "Edit Testimonial" : "Add Testimonial"}</h1>
+        <p className="mt-1 text-sm text-[#6e4a3b]">
+          {editing ? "Update existing student/parent testimonial details." : "Add a new parent or student testimonial formatted exactly as shown on the website."}
+        </p>
       </div>
 
       <div className="grid max-w-6xl gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
-          <h2 className="font-bold">Add a testimonial</h2>
-          <div className="mt-6 flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-[#e5ded4] bg-[#f1eee9]">
-              {form.image_url ? <img src={form.image_url} alt="" className="h-full w-full object-cover" /> : <UserRound className="h-7 w-7 text-[#6e4a3b]" />}
+        {/* Form Column */}
+        <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm space-y-5">
+          <h2 className="font-bold text-base text-[#22130f]">Testimonial details</h2>
+
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 shrink-0 rounded-full p-[2px] bg-gradient-to-tr from-[#137a49] to-[#e87722] shadow">
+              <img
+                src={imageUrl || "/placeholder.svg"}
+                alt=""
+                className="h-full w-full rounded-full object-cover object-top bg-slate-100"
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+              />
             </div>
-            <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-[#137a49]">
-              <Upload className="h-4 w-4" />
-              Upload photo (optional)
-              <input className="sr-only" type="file" accept="image/*" onChange={(event) => choosePhoto(event.target.files)} />
+            <div>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-[#e5ded4] bg-[#fdfcfb] px-3 py-2 text-sm font-medium text-[#137a49] hover:bg-[#f5f2eb]">
+                <Upload className="h-4 w-4" />
+                Upload parent photo
+                <input className="sr-only" type="file" accept="image/*" onChange={(e) => choosePhoto(e.target.files)} />
+              </label>
+              <p className="mt-1 text-xs text-[#6e4a3b]">Recommended square portrait photo.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="parent-name">Parent / Person Name <span className="text-red-600">*</span></Label>
+              <Input id="parent-name" value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Sneha Sharma" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="child-name">Student / Child Name</Label>
+              <Input id="child-name" value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="K Ahaan Dev" />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="class-name">Class / Section</Label>
+              <Input id="class-name" value={className} onChange={(e) => setClassName(e.target.value)} placeholder="Class 2 A1" />
+            </div>
+            <div className="space-y-2">
+              <Label>Language</Label>
+              <Select value={language} onValueChange={(val) => setLanguage(val as "en" | "kn")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="kn">Kannada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Parent">Parent</SelectItem>
+                  <SelectItem value="Student">Student</SelectItem>
+                  <SelectItem value="Alumni">Alumni</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 rounded-lg border border-[#e5ded4] bg-[#faf8f5] p-3 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#3b241d]">
+              <Switch checked={featured} onCheckedChange={setFeatured} />
+              Feature on Homepage Carousel
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer font-medium text-[#3b241d]">
+              <Switch checked={isVisible} onCheckedChange={setIsVisible} />
+              Published on Website
             </label>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Person Name <span className="text-red-600">*</span></Label>
-              <Input value={form.title || ""} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Priya Sharma" />
-            </div>
-            <div className="space-y-2">
-              <Label>Designation / Class / Role</Label>
-              <Input value={form.subtitle || ""} onChange={(event) => setForm({ ...form, subtitle: event.target.value })} placeholder="Ananya Sharma - Class 8" />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="testimonial-quote">Testimonial Feedback / Message <span className="text-red-600">*</span></Label>
+            <Textarea
+              id="testimonial-quote"
+              rows={6}
+              value={quote}
+              onChange={(e) => setQuote(e.target.value)}
+              placeholder="Share the full testimonial experience and feedback regarding SJR Public School..."
+              className={language === "kn" ? "font-kannada leading-relaxed" : ""}
+            />
           </div>
 
-          <div className="mt-4 space-y-2">
-            <Label>Category</Label>
-            <Select value={form.category || "Parent"} onValueChange={(value) => setForm({ ...form, category: value })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Parent">Parent</SelectItem>
-                <SelectItem value="Student">Student</SelectItem>
-                <SelectItem value="Alumni">Alumni</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <Label>Testimonial Content <span className="text-red-600">*</span></Label>
-            <Textarea rows={5} value={form.body || ""} onChange={(event) => setForm({ ...form, body: event.target.value })} placeholder="Share what they said about SJRKPS..." />
-          </div>
-
-          <div className="mt-5 flex justify-end gap-3 border-t border-[#e5ded4] pt-4">
-            {editing && <Button variant="outline" onClick={resetForm}>Cancel Edit</Button>}
+          <div className="flex justify-end gap-3 border-t border-[#e5ded4] pt-4">
+            <Button variant="outline" onClick={onCancel}>Cancel</Button>
             <Button variant="outline" disabled={isSaving} onClick={() => save(false)}>Save as Draft</Button>
-            <Button className="bg-[#137a49] hover:bg-[#0f663d]" disabled={isSaving} onClick={() => save(true)}>Publish</Button>
+            <Button className="bg-[#137a49] hover:bg-[#0f663d]" disabled={isSaving} onClick={() => save(true)}>
+              {editing ? "Save Changes" : "Publish Testimonial"}
+            </Button>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
-          <h2 className="font-bold">Live preview</h2>
-          <div className="mt-6 rounded-xl border border-[#e5ded4] p-6">
-            <MessageSquareQuote className="h-8 w-8 text-[#8bbfa8]" />
-            <p className="mt-3 min-h-20 text-sm italic text-[#6e4a3b]">{form.body || "Testimonial content will appear here..."}</p>
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#f1eee9]">
-                {form.image_url ? <img src={form.image_url} alt="" className="h-full w-full object-cover" /> : <UserRound className="h-5 w-5 text-[#6e4a3b]" />}
-              </div>
-              <div>
-                <p className="font-bold">{form.title || "Person Name"}</p>
-                <p className="text-xs text-[#6e4a3b]">{form.subtitle || "Designation / Class"}</p>
+        {/* Live Website Card Preview */}
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-[#22130f]">Website Card Preview</h2>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#137a49]/10 text-[#137a49]">
+                Live Website Format
+              </span>
+            </div>
+
+            {/* Exact Website Card Replica */}
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
+              <div className="h-1.5 w-full bg-gradient-to-r from-[#137a49] via-[#e87722] to-[#137a49]" />
+              <div className="p-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-16 w-16 shrink-0 rounded-full p-[2px] bg-gradient-to-tr from-[#137a49] to-[#e87722] shadow">
+                    <img
+                      src={imageUrl || "/placeholder.svg"}
+                      alt=""
+                      className="h-full w-full rounded-full object-cover object-top bg-slate-100"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h3 className={`font-bold text-[#3b241d] text-base md:text-lg leading-snug ${language === "kn" ? "font-kannada" : ""}`}>
+                        {parentName || "Parent Name"}
+                      </h3>
+                      {className && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full bg-[#137a49]/10 text-[#137a49] border border-[#137a49]/20">
+                          <GraduationCap className="h-3 w-3" />
+                          {className}
+                        </span>
+                      )}
+                    </div>
+                    {childName && (
+                      <p className="text-xs text-[#6e4a3b] mt-1 flex items-center gap-1">
+                        <UserRound className="h-3 w-3 text-[#e87722]" />
+                        <span>Parent of <strong className="font-medium text-[#22130f]">{childName}</strong></span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 text-[#4a3b32] text-sm leading-relaxed">
+                  <MessageSquareQuote className="h-4 w-4 text-[#137a49]/40 mb-1 inline-block mr-1.5" />
+                  <p className={`italic ${language === "kn" ? "font-kannada" : ""}`}>
+                    {quote ? `"${quote}"` : '"Testimonial feedback message will appear here..."'}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="mt-7 max-w-6xl rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
-        <h2 className="font-bold">All testimonials ({testimonials.length})</h2>
-        <div className="mt-5 overflow-x-auto rounded-xl border border-[#e5ded4]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Photo</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Quote</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {testimonials.map((item) => (
-                <TableRow key={item.key}>
-                  <TableCell><img src={item.image} alt="" className="h-9 w-9 rounded-full object-cover" /></TableCell>
-                  <TableCell className="font-semibold">{item.name}</TableCell>
-                  <TableCell>{item.role}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell className="max-w-xs truncate">{item.quote}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={item.isVisible ? "border-green-200 bg-green-50 text-green-700" : "border-slate-200 bg-slate-100 text-slate-600"}>{item.isVisible ? "Published" : "Draft"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => startEdit(item)}>Edit</Button>
-                      <Button variant="destructive" size="sm" onClick={() => remove(item)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            <p className="mt-4 text-xs text-[#6e4a3b]">
+              This preview matches the card rendered on <strong>/life/testimonials</strong> and the homepage carousel.
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -2398,6 +2605,7 @@ const AdminDashboard = () => {
   const [section, setSection] = useState<Section>(() => sectionFromAdminPath(location.pathname));
   const [editingNews, setEditingNews] = useState<NewsDisplayItem | null>(null);
   const [editingEvent, setEditingEvent] = useState<EventDisplayItem | null>(null);
+  const [editingTestimonial, setEditingTestimonial] = useState<TestimonialDisplayItem | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [teacherOrderDirty, setTeacherOrderDirty] = useState(false);
   const [openGroup, setOpenGroup] = useState<NavGroupId | null>(() => groupForSection(sectionFromAdminPath(location.pathname)));
@@ -2416,6 +2624,7 @@ const AdminDashboard = () => {
     setOpenGroup(groupForSection(nextSection));
     if (nextSection !== "news-edit") setEditingNews(null);
     if (nextSection !== "event-edit") setEditingEvent(null);
+    if (nextSection !== "testimonial-edit") setEditingTestimonial(null);
     if (nextSection !== "teacher-add") setEditingTeacher(null);
   }, [location.pathname]);
 
@@ -2432,6 +2641,7 @@ const AdminDashboard = () => {
     if (teacherOrderDirty && section === "teacher-list" && next !== "teacher-list" && !window.confirm("You have unsaved changes. Are you sure you want to leave without saving?")) return;
     if (next !== "news-edit") setEditingNews(null);
     if (next !== "event-edit") setEditingEvent(null);
+    if (next !== "testimonial-edit") setEditingTestimonial(null);
     if (next !== "teacher-add") setEditingTeacher(null);
     setSection(next);
     setMobileOpen(false);
@@ -2448,6 +2658,12 @@ const AdminDashboard = () => {
     setSection("event-edit");
     setMobileOpen(false);
     navigate("/admin/events/edit");
+  };
+  const editTestimonial = (item: TestimonialDisplayItem) => {
+    setEditingTestimonial(item);
+    setSection("testimonial-edit");
+    setMobileOpen(false);
+    navigate("/admin/testimonials/edit");
   };
   const editTeacher = (teacher: Teacher) => {
     if (teacherOrderDirty && !window.confirm("You have unsaved changes. Are you sure you want to leave without saving?")) return;
@@ -2485,8 +2701,9 @@ const AdminDashboard = () => {
               <NavButton nested active={section === "gallery-images"} icon={Images} label="Add Images" onClick={() => go("gallery-images")} />
               <NavButton nested active={section === "gallery-videos"} icon={Video} label="Add Videos" onClick={() => go("gallery-videos")} />
             </NavGroup>
-            <NavGroup id="testimonials" icon={MessageSquareQuote} label="Testimonials" active={isActive("testimonial-add")} open={openGroup === "testimonials"} onToggle={toggleGroup}>
+            <NavGroup id="testimonials" icon={MessageSquareQuote} label="Testimonials" active={isActive("testimonial-add", "testimonial-edit", "testimonial-list")} open={openGroup === "testimonials"} onToggle={toggleGroup}>
               <NavButton nested active={section === "testimonial-add"} icon={FilePlus} label="Add Testimonials" onClick={() => go("testimonial-add")} />
+              <NavButton nested active={isActive("testimonial-list", "testimonial-edit")} icon={MessageSquareQuote} label="View Testimonials" onClick={() => go("testimonial-list")} />
             </NavGroup>
             <NavGroup id="teachers" icon={Users} label="Teachers" active={isActive("teacher-add", "teacher-list")} open={openGroup === "teachers"} onToggle={toggleGroup}>
               <NavButton nested active={section === "teacher-add"} icon={FilePlus} label="Add New" onClick={() => go("teacher-add")} />
@@ -2520,7 +2737,9 @@ const AdminDashboard = () => {
             {section === "event-edit" && <EventFormPage editing={editingEvent} onCancel={() => go("event-list")} onSaved={() => go("event-list")} />}
             {section === "gallery-images" && <GalleryImagePage />}
             {section === "gallery-videos" && <GalleryVideoPage />}
-            {section === "testimonial-add" && <TestimonialsPage />}
+            {section === "testimonial-list" && <TestimonialsListPage onAdd={() => go("testimonial-add")} onEdit={editTestimonial} />}
+            {section === "testimonial-add" && <TestimonialFormPage editing={null} onCancel={() => go("testimonial-list")} onSaved={() => go("testimonial-list")} />}
+            {section === "testimonial-edit" && <TestimonialFormPage editing={editingTestimonial} onCancel={() => go("testimonial-list")} onSaved={() => go("testimonial-list")} />}
             {section === "teacher-list" && <TeachersViewPage onAdd={() => go("teacher-add")} onEdit={editTeacher} onDirtyChange={setTeacherOrderDirty} />}
             {section === "teacher-add" && <TeacherFormPage editing={editingTeacher} onCancel={() => go("teacher-list")} onSaved={() => go("teacher-list")} />}
           </div>

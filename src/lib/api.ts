@@ -8,6 +8,7 @@ export const ENQUIRY_STATUSES = [
 ] as const;
 
 import { allSchoolPhotos } from "@/data/galleryPhotos";
+import { authenticTestimonials } from "@/data/testimonials";
 
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 export type EnquirySource = "home" | "contact";
@@ -254,6 +255,28 @@ const initialVideoContent: AdminContentItem[] = [
   },
 ];
 
+const initialTestimonialContent: AdminContentItem[] = authenticTestimonials.map((t, index) => ({
+  id: t.id,
+  type: "testimonial",
+  title: t.parentName,
+  subtitle: `Parent of ${t.childName} (${t.className})`,
+  body: t.quote,
+  image_url: t.image,
+  category: "Parent",
+  is_visible: true,
+  display_order: index + 1,
+  fields: {
+    childName: t.childName,
+    className: t.className,
+    language: t.language || "en",
+    imageAlt: t.imageAlt,
+    featured: t.featured !== false,
+    subheadings: t.subheadings || [],
+  },
+  created_at: "2026-10-01T00:00:00Z",
+  updated_at: "2026-10-01T00:00:00Z",
+}));
+
 const emptyStaticData = (): StaticData => ({
   enquiries: [],
   followUps: [],
@@ -262,7 +285,7 @@ const emptyStaticData = (): StaticData => ({
     event: [],
     gallery: initialGalleryContent,
     video: initialVideoContent,
-    testimonial: [],
+    testimonial: initialTestimonialContent,
     teacher: [],
   },
 });
@@ -286,7 +309,7 @@ function readStaticData(): StaticData {
         event: Array.isArray(parsed.content?.event) ? parsed.content.event : [],
         gallery: Array.isArray(parsed.content?.gallery) && parsed.content.gallery.length > 0 ? parsed.content.gallery : initialGalleryContent,
         video: Array.isArray(parsed.content?.video) && parsed.content.video.length > 0 ? parsed.content.video : initialVideoContent,
-        testimonial: Array.isArray(parsed.content?.testimonial) ? parsed.content.testimonial : [],
+        testimonial: Array.isArray(parsed.content?.testimonial) && parsed.content.testimonial.length > 0 ? parsed.content.testimonial : initialTestimonialContent,
         teacher: Array.isArray(parsed.content?.teacher) ? parsed.content.teacher : [],
       },
     };
