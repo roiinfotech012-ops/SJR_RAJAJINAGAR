@@ -211,44 +211,44 @@ function AdminLogin({ onLogin }: { onLogin: (user: AdminUser) => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f6f1] text-[#3b241d]">
-      <div className="grid min-h-screen lg:grid-cols-[1fr_540px]">
-        <div className="hidden bg-[#137a49] p-12 text-white lg:flex lg:flex-col lg:justify-between">
-          <div className="flex items-center gap-4">
-            <img src={sjreLogo} alt="SJR Public School - Rajajinagar" className="h-16 w-16 rounded-full bg-white p-1 shrink-0" />
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold">SJR PUBLIC SCHOOL - RAJAJINAGAR Admin</h1>
-              <p className="text-white/80">Content and enquiry management</p>
-            </div>
-          </div>
-          <div className="max-w-2xl">
-            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-white/70">Secure dashboard</p>
-            <h2 className="text-5xl font-bold leading-tight">Manage school content with confidence.</h2>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm w-full max-w-sm border-t-4 border-indian-green">
+        <div className="flex flex-col space-y-1.5 p-6 items-center text-center">
+          <img src={sjreLogo} alt="SJR Public School Logo" className="h-14 w-14 object-contain mb-1" />
+          <h3 className="text-2xl font-semibold leading-none tracking-tight">SJRPS Admin Login</h3>
+          <p className="text-xs text-muted-foreground mt-1">SJR Public School - Rajajinagar</p>
         </div>
-        <div className="flex items-center justify-center px-6 py-12">
-          <form action="" onSubmit={submit} className="w-full max-w-md rounded-lg border border-[#e5ded4] bg-white p-8 shadow-sm">
-            <div className="mb-8 flex items-center gap-3">
-              <img src={sjreLogo} alt="SJR Public School - Rajajinagar" className="h-14 w-14 rounded-full border border-[#e5ded4] object-contain p-1" />
-              <div>
-                <h2 className="text-2xl font-bold">Admin Login</h2>
-                <p className="text-sm text-[#6e4a3b]">SJR Public School - Rajajinagar</p>
-              </div>
+        <div className="p-6 pt-0">
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium leading-none" htmlFor="admin-email">Email</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                className="h-10"
+              />
             </div>
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="admin-email">Username / Email</Label>
-                <Input id="admin-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="admin-password">Password</Label>
-                <Input id="admin-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
-              </div>
-              <Button type="submit" disabled={isSubmitting} className="h-12 w-full bg-[#137a49] text-white hover:bg-[#0f663d]">
-                <Lock className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Signing in..." : "Sign in"}
-              </Button>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium leading-none" htmlFor="admin-password">Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                className="h-10"
+              />
             </div>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full h-10 bg-indian-green hover:bg-indian-green/90 text-white font-medium"
+            >
+              {isSubmitting ? "Signing in..." : "Sign in"}
+            </Button>
           </form>
         </div>
       </div>

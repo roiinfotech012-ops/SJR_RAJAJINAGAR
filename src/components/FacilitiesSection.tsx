@@ -28,7 +28,7 @@ const FacilitiesSection = () => {
               >
                 <div className="relative h-56 sm:h-60 overflow-hidden bg-slate-100">
                   <img
-                    src={f.coverImage}
+                    src={encodeURI(decodeURI(f.coverImage))}
                     alt={f.coverImageAlt}
                     loading="lazy"
                     className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500"
