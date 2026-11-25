@@ -371,15 +371,14 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
   }, []);
 
   const cards = [
-    { label: "Total News", value: dashboardCounts.newsTotal, detail: "articles in the system", icon: Newspaper, tone: "green" },
-    { label: "Published News", value: dashboardCounts.newsVisible, detail: "visible on the website", icon: Newspaper, tone: "gold" },
-    { label: "Unpublished News", value: Math.max(0, dashboardCounts.newsTotal - dashboardCounts.newsVisible), detail: "drafts, hidden from site", icon: CalendarDays, tone: "brown" },
+    { label: "Total News & Events", value: dashboardCounts.newsTotal, detail: "articles & events in system", icon: Newspaper, tone: "green" },
+    { label: "Published News & Events", value: dashboardCounts.newsVisible, detail: "visible on the website", icon: Newspaper, tone: "gold" },
+    { label: "Draft News & Events", value: Math.max(0, dashboardCounts.newsTotal - dashboardCounts.newsVisible), detail: "drafts, hidden from site", icon: CalendarDays, tone: "brown" },
     { label: "Gallery Photos", value: dashboardCounts.galleryPhotos, detail: "across all categories", icon: Image, tone: "orange" },
     { label: "Video Gallery", value: dashboardCounts.galleryVideos, detail: "videos available", icon: Video, tone: "navy" },
     { label: "Testimonials", value: dashboardCounts.testimonials, detail: "on the website", icon: MessageSquareQuote, tone: "green" },
     { label: "Home Enquiries", value: stats?.bySource.find((s) => s.source === "home")?.count || 0, detail: "from homepage form", icon: Home, tone: "green" },
     { label: "Contact Enquiries", value: stats?.bySource.find((s) => s.source === "contact")?.count || 0, detail: "from contact page", icon: Mail, tone: "orange" },
-    { label: "Events", value: dashboardCounts.events, detail: "upcoming homepage items", icon: CalendarDays, tone: "green" },
     { label: "Teachers", value: dashboardCounts.teachers, detail: "faculty profiles managed", icon: GraduationCap, tone: "brown" },
   ];
 
@@ -885,14 +884,14 @@ function NewsDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (ite
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[26px] font-bold text-[#4a2b22]">News Details</h1>
+          <h1 className="text-[26px] font-bold text-[#4a2b22]">News & Events Details</h1>
           <p className="mt-1 text-sm text-[#6e4a3b]">
-            Showing all news currently used by the frontend, sorted latest to oldest.
+            Showing all news and events currently published or drafted for the website.
           </p>
         </div>
         <Button onClick={onAdd} className="bg-[#137a49] hover:bg-[#0f663d]">
           <FilePlus className="mr-2 h-4 w-4" />
-          Add News
+          Add News & Events
         </Button>
       </div>
 
@@ -900,13 +899,13 @@ function NewsDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (ite
         <div className="border-b border-[#e5ded4] p-5">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#6e4a3b]" />
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search news title, date, or slug" className="pl-9" />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search news & events title, date, or slug" className="pl-9" />
           </div>
         </div>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>News</TableHead>
+              <TableHead>News & Event</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Source</TableHead>
               <TableHead>Status</TableHead>
@@ -915,14 +914,23 @@ function NewsDetailsManager({ onAdd, onEdit }: { onAdd: () => void; onEdit: (ite
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="py-10 text-center">Loading news...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="py-10 text-center">Loading news & events...</TableCell></TableRow>
             ) : items.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="py-10 text-center">No news found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="py-10 text-center">No news or events found.</TableCell></TableRow>
             ) : items.map((item) => (
               <TableRow key={item.key}>
                 <TableCell>
                   <div className="flex max-w-2xl gap-4">
-                    <img src={item.image} alt="" className="h-20 w-28 rounded-md object-cover" />
+                    <div className="h-20 w-28 shrink-0 overflow-hidden rounded-md border border-[#e5ded4] bg-slate-100 flex items-center justify-center">
+                      <img
+                        src={item.image || "/placeholder.svg"}
+                        alt={item.title}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
+                        }}
+                      />
+                    </div>
                     <div>
                       <p className="font-semibold text-[#3b241d]">{item.title}</p>
                       <p className="mt-1 line-clamp-2 text-sm text-[#6e4a3b]">{item.summary}</p>
@@ -1065,9 +1073,9 @@ function NewsFormPage({ editing, onCancel, onSaved }: { editing: NewsDisplayItem
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-[26px] font-bold text-[#4a2b22]">{editing ? "Edit News" : "Add News"}</h1>
+        <h1 className="text-[26px] font-bold text-[#4a2b22]">{editing ? "Edit News & Event" : "Add News & Event"}</h1>
         <p className="mt-1 text-sm text-[#6e4a3b]">
-          {editing ? "Update the selected news item without changing unrelated records." : "Create a new news article or announcement for the website."}
+          {editing ? "Update the selected news or event item without changing unrelated records." : "Create a new news article, announcement, or event for the website."}
         </p>
       </div>
 
@@ -1101,7 +1109,14 @@ function NewsFormPage({ editing, onCancel, onSaved }: { editing: NewsDisplayItem
             <Label htmlFor="news-image">Featured Image</Label>
             <div className="rounded-lg border border-dashed border-[#dccfc1] p-4">
               {form.image_url ? (
-                <img src={form.image_url} alt="" className="mb-4 h-44 w-full rounded-md object-cover" />
+                <img
+                  src={form.image_url}
+                  alt=""
+                  className="mb-4 h-44 w-full rounded-md object-cover bg-slate-100"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
+                  }}
+                />
               ) : (
                 <div className="flex h-40 flex-col items-center justify-center rounded-md bg-[#faf9f6] text-center text-sm text-[#6e4a3b]">
                   <Image className="mb-3 h-8 w-8" />
@@ -2383,13 +2398,9 @@ const AdminDashboard = () => {
               <NavButton nested active={section === "home-enquiries"} icon={Home} label="Home" onClick={() => go("home-enquiries")} />
               <NavButton nested active={section === "contact-enquiries"} icon={Mail} label="Contact" onClick={() => go("contact-enquiries")} />
             </NavGroup>
-            <NavGroup id="news" icon={Newspaper} label="News" active={isActive("news-add", "news-edit", "news-list")} open={openGroup === "news"} onToggle={toggleGroup}>
-              <NavButton nested active={isActive("news-list", "news-edit")} icon={Newspaper} label="News Details" onClick={() => go("news-list")} />
-              <NavButton nested active={section === "news-add"} icon={FilePlus} label="Add News" onClick={() => go("news-add")} />
-            </NavGroup>
-            <NavGroup id="events" icon={CalendarDays} label="Upcoming Events" active={isActive("event-add", "event-edit", "event-list")} open={openGroup === "events"} onToggle={toggleGroup}>
-              <NavButton nested active={isActive("event-list", "event-edit")} icon={CalendarDays} label="View Details" onClick={() => go("event-list")} />
-              <NavButton nested active={section === "event-add"} icon={FilePlus} label="Add Event" onClick={() => go("event-add")} />
+            <NavGroup id="news" icon={Newspaper} label="News & Events" active={isActive("news-add", "news-edit", "news-list", "event-add", "event-edit", "event-list")} open={openGroup === "news"} onToggle={toggleGroup}>
+              <NavButton nested active={isActive("news-list", "news-edit", "event-list", "event-edit")} icon={Newspaper} label="News & Events Details" onClick={() => go("news-list")} />
+              <NavButton nested active={section === "news-add" || section === "event-add"} icon={FilePlus} label="Add News & Events" onClick={() => go("news-add")} />
             </NavGroup>
             <NavGroup id="gallery" icon={GalleryHorizontal} label="Gallery" active={isActive("gallery-images", "gallery-videos")} open={openGroup === "gallery"} onToggle={toggleGroup}>
               <NavButton nested active={section === "gallery-images"} icon={Images} label="Add Images" onClick={() => go("gallery-images")} />

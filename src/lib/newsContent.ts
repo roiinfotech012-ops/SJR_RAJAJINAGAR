@@ -1,3 +1,4 @@
+import { newsEvents, type NewsEvent } from "@/data/newsEvents";
 import { schoolEvents, type SchoolEvent } from "@/data/events";
 import type { AdminContentItem, AdminContentPayload } from "@/lib/api";
 
@@ -16,6 +17,19 @@ export type NewsDisplayItem = {
   href: string;
   isVisible: boolean;
   updatedAt?: string;
+};
+
+export const normalizeSafeImage = (src?: string | null): string => {
+  if (!src || !src.trim()) return "/placeholder.svg";
+  const s = src.trim();
+  if (s.startsWith("/") && !s.startsWith("//")) {
+    try {
+      return encodeURI(decodeURI(s));
+    } catch {
+      return s;
+    }
+  }
+  return s;
 };
 
 export const formatNewsDate = (value?: string | null) =>
@@ -37,7 +51,8 @@ const adminNewsToDisplay = (item: AdminContentItem): NewsDisplayItem => {
   const slug = getAdminNewsSlug(item);
   const gallery = [item.image_url, ...((item.fields?.gallery as string[] | undefined) || [])]
     .filter(Boolean)
-    .map(String);
+    .map(String)
+    .map(normalizeSafeImage);
 
   return {
     key: `database-${item.id}`,
@@ -49,7 +64,7 @@ const adminNewsToDisplay = (item: AdminContentItem): NewsDisplayItem => {
     dateValue: item.published_at || item.created_at,
     summary: item.subtitle || item.body || "",
     body: (item.body || item.subtitle || "").split(/\n+/).map((part) => part.trim()).filter(Boolean),
-    image: item.image_url || "/placeholder.svg",
+    image: normalizeSafeImage(item.image_url),
     gallery: gallery.length ? gallery : ["/placeholder.svg"],
     href: `/news/${slug || item.id}`,
     isVisible: item.is_visible,
@@ -57,8 +72,23 @@ const adminNewsToDisplay = (item: AdminContentItem): NewsDisplayItem => {
   };
 };
 
+const newsEventToDisplay = (item: NewsEvent): NewsDisplayItem => ({
+  key: `frontend-${item.slug}`,
+  source: "frontend",
+  slug: item.slug,
+  title: item.title,
+  date: item.date,
+  dateValue: item.sortDate,
+  summary: item.summary,
+  body: item.body,
+  image: normalizeSafeImage(item.image),
+  gallery: (item.gallery || []).map((g) => normalizeSafeImage(g.src)),
+  href: `/news/${item.slug}`,
+  isVisible: true,
+});
+
 const schoolEventToDisplay = (item: SchoolEvent): NewsDisplayItem => ({
-  key: `frontend-${item.id}`,
+  key: `frontend-event-${item.id}`,
   source: "frontend",
   slug: item.id,
   title: item.title,
@@ -66,16 +96,26 @@ const schoolEventToDisplay = (item: SchoolEvent): NewsDisplayItem => ({
   dateValue: item.academicYear,
   summary: item.summary,
   body: [item.description],
-  image: item.featuredImage,
-  gallery: item.galleryImages,
+  image: normalizeSafeImage(item.featuredImage),
+  gallery: (item.galleryImages || []).map(normalizeSafeImage),
   href: `/news/${item.id}`,
   isVisible: true,
 });
 
-export const mergeNewsItems = (adminNews: AdminContentItem[] = []) => {
+export const mergeNewsItems = (adminNews: AdminContentItem[] = []): NewsDisplayItem[] => {
   const bySlug = new Map<string, NewsDisplayItem>();
 
-  schoolEvents.forEach((item) => bySlug.set(item.id, schoolEventToDisplay(item)));
+  // 1. Add all rich school news and events
+  newsEvents.forEach((item) => bySlug.set(item.slug, newsEventToDisplay(item)));
+
+  // 2. Add extra campus events if not already present
+  schoolEvents.forEach((item) => {
+    if (!bySlug.has(item.id)) {
+      bySlug.set(item.id, schoolEventToDisplay(item));
+    }
+  });
+
+  // 3. Database admin records take priority and overlay/add
   adminNews.forEach((item) => {
     const displayItem = adminNewsToDisplay(item);
     bySlug.set(displayItem.slug || item.id, displayItem);
@@ -84,12 +124,16 @@ export const mergeNewsItems = (adminNews: AdminContentItem[] = []) => {
   return Array.from(bySlug.values());
 };
 
-export const findNewsItem = (adminNews: AdminContentItem[], slug?: string) => {
+export const findNewsItem = (adminNews: AdminContentItem[], slug?: string): NewsDisplayItem | undefined => {
   if (!slug) return undefined;
   const adminItem = adminNews.find((item) => item.id === slug || getAdminNewsSlug(item) === slug);
   if (adminItem) return adminNewsToDisplay(adminItem);
-  const frontendItem = schoolEvents.find((item) => item.id === slug);
-  return frontendItem ? schoolEventToDisplay(frontendItem) : undefined;
+
+  const foundNews = newsEvents.find((item) => item.slug === slug);
+  if (foundNews) return newsEventToDisplay(foundNews);
+
+  const foundSchoolEvent = schoolEvents.find((item) => item.id === slug);
+  return foundSchoolEvent ? schoolEventToDisplay(foundSchoolEvent) : undefined;
 };
 
 export const newsDisplayToPayload = (item: NewsDisplayItem): AdminContentPayload => ({
