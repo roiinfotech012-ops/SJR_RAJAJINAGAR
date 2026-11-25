@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite preview"
+    "start": "vite preview",
+    "db:init": "node scripts/init-db.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -64,10 +65,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.5.5",
+    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "autoprefixer": "^10.4.20",
+    "pg": "^8.23.1",
     "postcss": "^8.4.47",
     "sharp": "^0.35.5",
     "tailwindcss": "^3.4.11",
