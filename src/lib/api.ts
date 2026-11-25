@@ -40,10 +40,10 @@ export type FollowUp = {
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 const useApiAuth = import.meta.env.VITE_USE_API_AUTH === "true";
-const staticAdminEmail = (import.meta.env.VITE_ADMIN_EMAIL || "admin@sjrpshbr.sjres.edu.in").trim().toLowerCase();
+const staticAdminEmail = (import.meta.env.VITE_ADMIN_EMAIL || "admin@sjrpublicschool.sjres.edu.in").trim().toLowerCase();
 const staticAdminPasswordHash =
   import.meta.env.VITE_ADMIN_PASSWORD_SHA256 ||
-  "ecccf750d214241b33c4656db36e1476a8a56c6e4478d33645dc57190b871e04";
+  "dbc5149b2aece3a4646f7acea8bc7a6bff98e0f73a7885eae6e7debbd222debe";
 const adminSessionKey = "sjr_admin_user";
 const staticDataKey = "sjr_admin_static_data";
 
