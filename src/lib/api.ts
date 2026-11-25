@@ -9,6 +9,7 @@ export const ENQUIRY_STATUSES = [
 
 import { allSchoolPhotos } from "@/data/galleryPhotos";
 import { authenticTestimonials } from "@/data/testimonials";
+import { staffMembers } from "@/data/staff";
 
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 export type EnquirySource = "home" | "contact";
@@ -277,6 +278,29 @@ const initialTestimonialContent: AdminContentItem[] = authenticTestimonials.map(
   updated_at: "2026-10-01T00:00:00Z",
 }));
 
+const initialTeacherContent: AdminContentItem[] = staffMembers.map((staff, index) => ({
+  id: `staff-${staff.id}`,
+  type: "teacher",
+  title: staff.name,
+  subtitle: staff.designation,
+  body: staff.qualification || "Educational Faculty",
+  image_url: staff.photo || "/placeholder.svg",
+  category: staff.category,
+  is_visible: true,
+  display_order: index + 1,
+  fields: {
+    subject: staff.subject,
+    qualification: staff.qualification || "Educational Faculty",
+    experience: staff.experience || "Dedicated Educator",
+    category: staff.category,
+    section: staff.category,
+    note: staff.note || "",
+    featured: index < 4,
+  },
+  created_at: "2026-10-01T00:00:00Z",
+  updated_at: "2026-10-01T00:00:00Z",
+}));
+
 const emptyStaticData = (): StaticData => ({
   enquiries: [],
   followUps: [],
@@ -286,7 +310,7 @@ const emptyStaticData = (): StaticData => ({
     gallery: initialGalleryContent,
     video: initialVideoContent,
     testimonial: initialTestimonialContent,
-    teacher: [],
+    teacher: initialTeacherContent,
   },
 });
 
@@ -310,7 +334,7 @@ function readStaticData(): StaticData {
         gallery: Array.isArray(parsed.content?.gallery) && parsed.content.gallery.length > 0 ? parsed.content.gallery : initialGalleryContent,
         video: Array.isArray(parsed.content?.video) && parsed.content.video.length > 0 ? parsed.content.video : initialVideoContent,
         testimonial: Array.isArray(parsed.content?.testimonial) && parsed.content.testimonial.length > 0 ? parsed.content.testimonial : initialTestimonialContent,
-        teacher: Array.isArray(parsed.content?.teacher) ? parsed.content.teacher : [],
+        teacher: Array.isArray(parsed.content?.teacher) && parsed.content.teacher.length > 0 ? parsed.content.teacher : initialTeacherContent,
       },
     };
   } catch {

@@ -36,7 +36,17 @@ import { useToast } from "@/hooks/use-toast";
 import { createNewsSlug, markNewsSlugDeleted, mergeNewsItems, newsDisplayToPayload, type NewsDisplayItem } from "@/lib/newsContent";
 import { eventDateLabelToISO, eventDisplayToPayload, markEventTitleDeleted, mergeEventItems, type EventDisplayItem } from "@/lib/eventContent";
 import { markTestimonialDeleted, mergeTestimonialItems, testimonialDisplayToPayload, type TestimonialDisplayItem } from "@/lib/testimonialContent";
-import { teachers as frontendTeachers, type Teacher } from "@/pages/about/Teachers";
+import {
+  type Teacher,
+  frontendTeachers,
+  defaultFeaturedTeacherNames,
+  adminTeacherToDisplay,
+  getDeletedTeacherNames,
+  markTeacherDeleted,
+  mergeTeacherItems,
+  teacherToPayload,
+  teacherOrderKey,
+} from "@/lib/teacherContent";
 import { photos as frontendGalleryPhotos } from "@/pages/gallery/PhotoGallery";
 import { videos as frontendGalleryVideos } from "@/pages/gallery/VideoGallery";
 import sjreLogo from "@/assets/sjre.png";
@@ -2242,81 +2252,7 @@ function TestimonialFormPage({
   );
 }
 
-const defaultFeaturedTeacherNames = new Set(["Mr Prakash H S", "Mrs Lily Roy", "Mrs Mini Jomy", "Mrs Menaka B"].map((name) => name.toLowerCase()));
 
-const adminTeacherToDisplay = (item: AdminContentItem): Teacher => ({
-  name: item.title,
-  designation: item.subtitle || "",
-  subject: item.category || String(item.fields?.subject || ""),
-  qualification: item.body || String(item.fields?.qualification || ""),
-  experience: String(item.fields?.experience || ""),
-  image: item.image_url || "/placeholder.svg",
-  isFeatured: item.fields?.featured === true,
-  source: "database",
-  adminId: item.id,
-  isVisible: item.is_visible,
-  displayOrder: item.display_order,
-});
-
-const deletedTeachersKey = "sjr_deleted_teachers";
-
-const getDeletedTeacherNames = (): string[] => {
-  try {
-    const raw = typeof window !== "undefined" ? window.localStorage.getItem(deletedTeachersKey) : null;
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-};
-
-const markTeacherDeleted = (name: string) => {
-  try {
-    const current = getDeletedTeacherNames();
-    const clean = name.trim().toLowerCase();
-    if (!current.includes(clean)) {
-      current.push(clean);
-      window.localStorage.setItem(deletedTeachersKey, JSON.stringify(current));
-    }
-  } catch {}
-};
-
-const mergeTeacherItems = (adminItems: AdminContentItem[]) => {
-  const byName = new Map<string, Teacher>();
-  const deletedNames = new Set(getDeletedTeacherNames());
-
-  frontendTeachers.forEach((teacher, index) => byName.set(teacher.name.toLowerCase(), {
-    ...teacher,
-    source: "frontend",
-    isVisible: true,
-    isFeatured: defaultFeaturedTeacherNames.has(teacher.name.toLowerCase()),
-    displayOrder: index + 1,
-  }));
-  adminItems.forEach((item) => {
-    const teacher = adminTeacherToDisplay(item);
-    byName.set(teacher.name.toLowerCase(), teacher);
-  });
-  return Array.from(byName.values())
-    .filter((t) => !deletedNames.has(t.name.toLowerCase()))
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
-};
-
-const teacherToPayload = (teacher: Teacher, displayOrder = teacher.displayOrder || 0): AdminContentPayload => ({
-  title: teacher.name,
-  subtitle: teacher.designation,
-  body: teacher.qualification,
-  image_url: teacher.image,
-  category: teacher.subject,
-  is_visible: teacher.isVisible !== false,
-  display_order: displayOrder,
-  fields: {
-    subject: teacher.subject,
-    qualification: teacher.qualification,
-    experience: teacher.experience,
-    featured: teacher.isFeatured === true,
-  },
-});
-
-const teacherOrderKey = (items: Teacher[]) => items.map((item) => item.name).join("|");
 
 function TeachersViewPage({ onAdd, onEdit, onDirtyChange }: { onAdd: () => void; onEdit: (teacher: Teacher) => void; onDirtyChange: (dirty: boolean) => void }) {
   const { toast } = useToast();
@@ -2580,8 +2516,22 @@ function TeacherFormPage({ editing, onCancel, onSaved }: { editing: Teacher | nu
             <div className="space-y-2"><Label>Designation <span className="text-red-600">*</span></Label><Input value={form.designation} onChange={(event) => setForm({ ...form, designation: event.target.value })} placeholder="Teacher, HOD, Co-Ordinator..." /></div>
             <div className="space-y-2"><Label>Subject / Department</Label><Input value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} placeholder="Mathematics" /></div>
             <div className="space-y-2"><Label>Experience</Label><Input value={form.experience} onChange={(event) => setForm({ ...form, experience: event.target.value })} placeholder="e.g. 12 Yrs" /></div>
-            <div className="space-y-2 sm:col-span-2"><Label>Qualification</Label><Input value={form.qualification} onChange={(event) => setForm({ ...form, qualification: event.target.value })} placeholder="M.Sc., B.Ed." /></div>
+            <div className="space-y-2">
+              <Label>Section / Category</Label>
+              <Select value={form.category || "Secondary and High School"} onValueChange={(val) => setForm({ ...form, category: val, section: val })}>
+                <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Principal">Principal</SelectItem>
+                  <SelectItem value="Secondary and High School">Secondary and High School</SelectItem>
+                  <SelectItem value="Primary Section">Primary Section</SelectItem>
+                  <SelectItem value="Pre-Primary Section">Pre-Primary Section</SelectItem>
+                  <SelectItem value="Office Staff">Office Staff</SelectItem>
+                  <SelectItem value="Supporting Staff">Supporting Staff</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2"><Label>Display Order / Position</Label><Input type="number" min="1" value={form.displayOrder || ""} onChange={(event) => setForm({ ...form, displayOrder: Number(event.target.value || 0) })} placeholder="Auto" /></div>
+            <div className="space-y-2 sm:col-span-2"><Label>Qualification</Label><Input value={form.qualification} onChange={(event) => setForm({ ...form, qualification: event.target.value })} placeholder="M.Sc., B.Ed." /></div>
             <div className="flex flex-wrap items-center gap-8 sm:col-span-2">
               <label className="flex items-center gap-3"><Switch checked={form.isFeatured === true} onCheckedChange={(checked) => setForm({ ...form, isFeatured: checked })} />Featured on homepage</label>
               <label className="flex items-center gap-3"><Switch checked={form.isVisible !== false} onCheckedChange={(checked) => setForm({ ...form, isVisible: checked })} />Published</label>

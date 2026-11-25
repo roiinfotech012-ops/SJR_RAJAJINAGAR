@@ -1,12 +1,33 @@
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { BookOpen, GraduationCap, Clock, ChevronRight } from "lucide-react";
-import { staffMembers } from "@/data/staff";
+import { getPublicContent, type AdminContentItem } from "@/lib/api";
+import { mergeTeacherItems, type Teacher } from "@/lib/teacherContent";
 
 const HomeFacultySection = () => {
-  // Display the top 4 official faculty leaders starting with Principal
-  const featured = staffMembers.slice(0, 4);
+  const [adminTeachers, setAdminTeachers] = useState<AdminContentItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublicContent("teacher")
+      .then((items) => {
+        if (isMounted && Array.isArray(items)) {
+          setAdminTeachers(items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const featured = useMemo(() => {
+    const all = mergeTeacherItems(adminTeachers).filter((t) => t.isVisible !== false);
+    const featuredOnly = all.filter((t) => t.isFeatured);
+    return featuredOnly.length >= 4 ? featuredOnly.slice(0, 4) : all.slice(0, 4);
+  }, [adminTeachers]);
 
   return (
     <section className="py-14 bg-white">
@@ -24,12 +45,12 @@ const HomeFacultySection = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mx-auto">
           {featured.map((t) => (
             <Card
-              key={t.id}
+              key={t.id || t.name}
               className="rounded-2xl border-none shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col h-full bg-white group"
             >
               <div className="aspect-[3/4] overflow-hidden bg-slate-100 relative">
                 <img 
-                  src={t.photo || "/placeholder.svg"} 
+                  src={t.image || "/placeholder.svg"} 
                   alt={`${t.name} - ${t.designation}`}
                   className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-500" 
                   onError={(e) => {

@@ -1,30 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, GraduationCap, Clock } from "lucide-react";
-import { staffMembers, type StaffMember } from "@/data/staff";
+import { getPublicContent, type AdminContentItem } from "@/lib/api";
+import { mergeTeacherItems, type Teacher, frontendTeachers } from "@/lib/teacherContent";
 
-// Backwards compatibility export if other components import Teacher interface
-export interface Teacher {
-  name: string;
-  designation: string;
-  subject: string;
-  qualification: string;
-  experience: string;
-  image: string;
-  section: string;
-}
-
-export const teachers: Teacher[] = staffMembers.map((s) => ({
-  name: s.name,
-  designation: s.designation,
-  subject: s.subject,
-  qualification: s.qualification || "Educational Faculty",
-  experience: s.experience || "Dedicated Educator",
-  image: s.photo || "/placeholder.svg",
-  section: s.category,
-}));
+// Backwards compatibility re-exports
+export type { Teacher };
+export const teachers = frontendTeachers;
 
 const StaffPhoto = ({ src, alt, name }: { src: string | null; alt: string; name: string }) => {
   const [hasError, setHasError] = useState(false);
@@ -64,6 +48,26 @@ const StaffPhoto = ({ src, alt, name }: { src: string | null; alt: string; name:
 };
 
 const Teachers = () => {
+  const [adminTeachers, setAdminTeachers] = useState<AdminContentItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublicContent("teacher")
+      .then((items) => {
+        if (isMounted && Array.isArray(items)) {
+          setAdminTeachers(items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const teachersList = useMemo(() => {
+    return mergeTeacherItems(adminTeachers).filter((t) => t.isVisible !== false);
+  }, [adminTeachers]);
+
   return (
     <Layout>
       <PageHero
@@ -85,15 +89,15 @@ const Teachers = () => {
 
           {/* Staff Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full mx-auto">
-            {staffMembers.map((staff) => (
+            {teachersList.map((staff) => (
               <Card
-                key={staff.id}
+                key={staff.id || staff.name}
                 className="rounded-2xl border-none shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col h-full bg-white group"
               >
                 {/* Photo container */}
                 <div className="relative aspect-[3/4] overflow-hidden bg-slate-100">
                   <StaffPhoto
-                    src={staff.photo}
+                    src={staff.image || null}
                     alt={`${staff.name} - ${staff.designation}`}
                     name={staff.name}
                   />
@@ -102,17 +106,19 @@ const Teachers = () => {
                   {staff.note && (
                     <div className="absolute top-2.5 right-2.5 flex justify-end items-start pointer-events-none">
                       <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        Superannuation
+                        {staff.note.includes("Superannuation") ? "Superannuation" : staff.note}
                       </span>
                     </div>
                   )}
 
                   {/* Category Pill at bottom of image */}
-                  <div className="absolute bottom-2.5 left-2.5 pointer-events-none">
-                    <span className="bg-white/90 backdrop-blur-md text-logo-navy text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm border border-white/40">
-                      {staff.category}
-                    </span>
-                  </div>
+                  {(staff.category || staff.section) && (
+                    <div className="absolute bottom-2.5 left-2.5 pointer-events-none">
+                      <span className="bg-white/90 backdrop-blur-md text-logo-navy text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm border border-white/40">
+                        {staff.category || staff.section}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
