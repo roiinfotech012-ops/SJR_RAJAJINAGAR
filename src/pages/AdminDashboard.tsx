@@ -272,7 +272,7 @@ function AdminLogin({ onLogin }: { onLogin: (user: AdminUser) => void }) {
               type="text"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@sjrpublicschool.edu.in"
+              autoComplete="off"
               required
               className="h-10 bg-[#faf8f5] border-[#e5ded4] focus:border-[#137a49]"
             />
@@ -286,7 +286,7 @@ function AdminLogin({ onLogin }: { onLogin: (user: AdminUser) => void }) {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••••"
+              autoComplete="current-password"
               required
               className="h-10 bg-[#faf8f5] border-[#e5ded4] focus:border-[#137a49]"
             />
