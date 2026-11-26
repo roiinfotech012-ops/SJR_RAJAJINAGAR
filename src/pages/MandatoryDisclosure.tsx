@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +19,8 @@ import {
   X,
 } from "lucide-react";
 import { schoolConfig } from "@/schoolConfig";
-import { mandatoryDocuments } from "@/data/disclosures";
+import { getPublicContent, type AdminContentItem } from "@/lib/api";
+import { mergeDisclosureItems, type MandatoryDocument } from "@/lib/disclosureContent";
 
 const schoolInfo = [
   { icon: Building2, label: "School Name", value: schoolConfig.name },
@@ -76,6 +77,25 @@ const institutionalInfo = [
 
 const MandatoryDisclosure = () => {
   const [previewPdf, setPreviewPdf] = useState<{ title: string; url: string } | null>(null);
+  const [adminDisclosures, setAdminDisclosures] = useState<AdminContentItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublicContent("disclosure")
+      .then((items) => {
+        if (isMounted && Array.isArray(items)) {
+          setAdminDisclosures(items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const documentsList = useMemo(() => {
+    return mergeDisclosureItems(adminDisclosures).filter((doc) => doc.isVisible !== false);
+  }, [adminDisclosures]);
 
   return (
     <Layout>
@@ -208,9 +228,9 @@ const MandatoryDisclosure = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200/80 bg-white">
-                  {mandatoryDocuments.map((doc, index) => (
+                  {documentsList.map((doc, index) => (
                     <tr
-                      key={doc.id}
+                      key={doc.id || doc.title}
                       className="hover:bg-emerald-50/50 transition-colors"
                     >
                       <td className="py-4 px-6 font-medium text-gray-900 text-sm sm:text-base whitespace-nowrap">

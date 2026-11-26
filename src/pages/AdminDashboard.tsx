@@ -47,6 +47,13 @@ import {
   teacherToPayload,
   teacherOrderKey,
 } from "@/lib/teacherContent";
+import {
+  type MandatoryDocument,
+  frontendDisclosures,
+  mergeDisclosureItems,
+  disclosureToPayload,
+  markDisclosureDeleted,
+} from "@/lib/disclosureContent";
 import { photos as frontendGalleryPhotos } from "@/pages/gallery/PhotoGallery";
 import { videos as frontendGalleryVideos } from "@/pages/gallery/VideoGallery";
 import sjreLogo from "@/assets/sjre.png";
@@ -60,6 +67,8 @@ import {
   ChevronRight,
   DoorOpen,
   FilePlus,
+  FileText,
+  ShieldCheck,
   GripVertical,
   Eye,
   GalleryHorizontal,
@@ -105,8 +114,11 @@ type Section =
   | "testimonial-edit"
   | "testimonial-list"
   | "teacher-add"
-  | "teacher-list";
-type NavGroupId = "enquiries" | "news" | "events" | "gallery" | "testimonials" | "teachers";
+  | "teacher-list"
+  | "disclosure-add"
+  | "disclosure-edit"
+  | "disclosure-list";
+type NavGroupId = "enquiries" | "news" | "events" | "gallery" | "testimonials" | "teachers" | "disclosures";
 
 const sourceLabels: Record<EnquirySource, string> = { home: "Home", contact: "Contact" };
 const contentLabels: Record<AdminContentType, string> = {
@@ -116,6 +128,7 @@ const contentLabels: Record<AdminContentType, string> = {
   video: "Video Gallery",
   testimonial: "Testimonials",
   teacher: "Teachers",
+  disclosure: "Mandatory Disclosure",
 };
 
 const statusStyles: Record<EnquiryStatus, string> = {
@@ -170,6 +183,9 @@ const sectionFromAdminPath = (pathname: string): Section => {
   if (pathname.startsWith("/admin/testimonials")) return "testimonial-list";
   if (pathname.startsWith("/admin/teachers/add")) return "teacher-add";
   if (pathname.startsWith("/admin/teachers")) return "teacher-list";
+  if (pathname.startsWith("/admin/disclosures/add")) return "disclosure-add";
+  if (pathname.startsWith("/admin/disclosures/edit")) return "disclosure-edit";
+  if (pathname.startsWith("/admin/disclosures") || pathname.startsWith("/admin/mandatory-disclosure")) return "disclosure-list";
   return "dashboard";
 };
 
@@ -189,6 +205,9 @@ const adminPathForSection = (section: Section) => {
   if (section === "testimonial-list") return "/admin/testimonials";
   if (section === "teacher-add") return "/admin/teachers/add";
   if (section === "teacher-list") return "/admin/teachers";
+  if (section === "disclosure-add") return "/admin/disclosures/add";
+  if (section === "disclosure-edit") return "/admin/disclosures/edit";
+  if (section === "disclosure-list") return "/admin/disclosures";
   return "/admin";
 };
 
@@ -199,6 +218,7 @@ const groupForSection = (section: Section): NavGroupId | null => {
   if (section === "gallery-images" || section === "gallery-videos") return "gallery";
   if (section === "testimonial-add" || section === "testimonial-edit" || section === "testimonial-list") return "testimonials";
   if (section === "teacher-add" || section === "teacher-list") return "teachers";
+  if (section === "disclosure-add" || section === "disclosure-edit" || section === "disclosure-list") return "disclosures";
   return null;
 };
 
@@ -290,6 +310,9 @@ const titleForSection = (section: Section) =>
     "testimonial-list": "View Testimonials",
     "teacher-add": "Add New Teacher",
     "teacher-list": "View Teachers",
+    "disclosure-add": "Add Mandatory Document",
+    "disclosure-edit": "Edit Mandatory Document",
+    "disclosure-list": "View Mandatory Documents",
   }[section]);
 
 function NavButton({ active, icon: Icon, label, onClick, nested = false }: { active: boolean; icon: LucideIcon; label: string; onClick: () => void; nested?: boolean }) {
@@ -360,6 +383,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
     testimonials: 0,
     events: 0,
     teachers: 0,
+    disclosures: 0,
   });
 
   useEffect(() => {
@@ -371,8 +395,9 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
       getContent("video"),
       getContent("testimonial"),
       getContent("teacher"),
+      getContent("disclosure"),
     ])
-      .then(([result, newsResult, eventResult, galleryResult, videoResult, testimonialResult, teacherResult]) => {
+      .then(([result, newsResult, eventResult, galleryResult, videoResult, testimonialResult, teacherResult, disclosureResult]) => {
         setStats(result);
         const newsItems = mergeNewsItems(newsResult.items);
         setDashboardCounts({
@@ -383,6 +408,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
           testimonials: mergeTestimonialItems(testimonialResult.items).length,
           events: mergeEventItems(eventResult.items).length,
           teachers: mergeTeacherItems(teacherResult.items).length,
+          disclosures: mergeDisclosureItems(disclosureResult.items).length,
         });
       })
       .catch(() => undefined);
@@ -395,9 +421,10 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
     { label: "Gallery Photos", value: dashboardCounts.galleryPhotos, detail: "across all categories", icon: Image, tone: "orange" },
     { label: "Video Gallery", value: dashboardCounts.galleryVideos, detail: "videos available", icon: Video, tone: "navy" },
     { label: "Testimonials", value: dashboardCounts.testimonials, detail: "on the website", icon: MessageSquareQuote, tone: "green" },
+    { label: "Teachers", value: dashboardCounts.teachers, detail: "faculty profiles managed", icon: GraduationCap, tone: "brown" },
+    { label: "Mandatory Documents", value: dashboardCounts.disclosures, detail: "compliance certificates published", icon: ShieldCheck, tone: "green" },
     { label: "Home Enquiries", value: stats?.bySource.find((s) => s.source === "home")?.count || 0, detail: "from homepage form", icon: Home, tone: "green" },
     { label: "Contact Enquiries", value: stats?.bySource.find((s) => s.source === "contact")?.count || 0, detail: "from contact page", icon: Mail, tone: "orange" },
-    { label: "Teachers", value: dashboardCounts.teachers, detail: "faculty profiles managed", icon: GraduationCap, tone: "brown" },
   ];
 
   return (
@@ -424,6 +451,8 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
             { label: "Upload gallery images", section: "gallery-images" as Section },
             { label: "Add a video", section: "gallery-videos" as Section },
             { label: "Add a testimonial", section: "testimonial-add" as Section },
+            { label: "Add a teacher", section: "teacher-add" as Section },
+            { label: "Add a mandatory document", section: "disclosure-add" as Section },
           ].map((action) => (
             <button key={action.label} onClick={() => onNavigate(action.section)} className="flex items-center justify-between rounded-lg border border-[#e5ded4] px-4 py-3 text-left text-[15px] hover:bg-[#f8f6f1]">
               {action.label}
@@ -2547,6 +2576,498 @@ function TeacherFormPage({ editing, onCancel, onSaved }: { editing: Teacher | nu
   );
 }
 
+function DisclosuresViewPage({
+  onAdd,
+  onEdit,
+}: {
+  onAdd: () => void;
+  onEdit: (doc: MandatoryDocument) => void;
+}) {
+  const { toast } = useToast();
+  const [adminItems, setAdminItems] = useState<AdminContentItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  const load = useCallback(async () => {
+    try {
+      const result = await getContent("disclosure");
+      setAdminItems(result.items);
+    } catch (error) {
+      toast({
+        title: "Unable to load documents",
+        description: error instanceof Error ? error.message : "Check configuration.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const docs = useMemo(() => mergeDisclosureItems(adminItems), [adminItems]);
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    docs.forEach((d) => {
+      if (d.category) set.add(d.category);
+    });
+    return Array.from(set);
+  }, [docs]);
+
+  const filteredDocs = useMemo(() => {
+    return docs.filter((doc) => {
+      const matchesSearch = [doc.title, doc.category, doc.filename, doc.description]
+        .join(" ")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesCat = selectedCategory === "all" || doc.category === selectedCategory;
+      return matchesSearch && matchesCat;
+    });
+  }, [docs, search, selectedCategory]);
+
+  const remove = async (doc: MandatoryDocument) => {
+    if (!window.confirm(`Are you sure you want to delete "${doc.title}"?`)) return;
+    try {
+      if (doc.adminId) {
+        await deleteContent("disclosure", doc.adminId);
+      }
+      markDisclosureDeleted(doc.title);
+      await load();
+      toast({ title: "Document deleted successfully" });
+    } catch (error) {
+      toast({
+        title: "Unable to delete document",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleVisibility = async (doc: MandatoryDocument) => {
+    try {
+      const updated = { ...doc, isVisible: doc.isVisible === false };
+      const payload = disclosureToPayload(updated);
+      if (doc.adminId) {
+        await updateContent("disclosure", doc.adminId, payload);
+      } else {
+        await createContent("disclosure", payload);
+      }
+      await load();
+      toast({ title: updated.isVisible ? "Document published" : "Document hidden" });
+    } catch (error) {
+      toast({
+        title: "Unable to update visibility",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#4a2b22]">Mandatory Disclosure Documents</h1>
+          <p className="mt-1 text-sm text-[#6e4a3b]">
+            {docs.length} statutory certificates and compliance documents published on the website.
+          </p>
+        </div>
+        <Button onClick={onAdd} className="bg-[#137a49] hover:bg-[#0f663d]">
+          <FilePlus className="mr-2 h-4 w-4" />
+          Add Document
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center max-w-5xl">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#6e4a3b]" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search documents by title, category, or filename..."
+            className="pl-9"
+          />
+        </div>
+        <div className="w-full sm:w-64">
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger>
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories ({docs.length})</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat} ({docs.filter((d) => d.category === cat).length})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="mt-5 max-w-5xl overflow-hidden rounded-2xl border border-[#e5ded4] bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-[#e5ded4] bg-[#faf8f5] text-xs font-bold uppercase tracking-wider text-[#6e4a3b]">
+              <tr>
+                <th className="py-3 px-4 w-14">Sl</th>
+                <th className="py-3 px-4">Document Name</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">File Details</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e5ded4]">
+              {filteredDocs.map((doc, idx) => (
+                <tr key={doc.id || doc.title} className="hover:bg-[#fbf9f6] transition-colors">
+                  <td className="py-4 px-4 font-bold text-[#6e4a3b]">
+                    {idx + 1}
+                  </td>
+                  <td className="py-4 px-4">
+                    <p className="font-bold text-[#3b241d]">{doc.title}</p>
+                    {doc.description && (
+                      <p className="mt-0.5 text-xs text-[#6e4a3b] line-clamp-1">{doc.description}</p>
+                    )}
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-800 font-semibold text-xs">
+                      {doc.category}
+                    </Badge>
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap text-xs text-[#6e4a3b]">
+                    <div className="font-medium text-[#3b241d]">{doc.filename}</div>
+                    <div>{doc.fileSize}</div>
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibility(doc)}
+                      className="cursor-pointer"
+                      title="Click to toggle publish status"
+                    >
+                      <Badge
+                        variant="outline"
+                        className={
+                          doc.isVisible !== false
+                            ? "border-green-200 bg-green-50 text-green-700"
+                            : "border-slate-200 bg-slate-100 text-slate-600"
+                        }
+                      >
+                        {doc.isVisible !== false ? "Published" : "Draft"}
+                      </Badge>
+                    </button>
+                  </td>
+                  <td className="py-4 px-4 text-right whitespace-nowrap">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (doc.pdfUrl) {
+                            window.open(doc.pdfUrl, "_blank", "noopener,noreferrer");
+                          } else {
+                            toast({ title: "No PDF link available", variant: "destructive" });
+                          }
+                        }}
+                        className="text-[#137a49] hover:text-[#0f663d]"
+                        title="View PDF"
+                      >
+                        <Eye className="mr-1 h-3.5 w-3.5" />
+                        View
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => onEdit(doc)}>
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove(doc)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredDocs.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-[#6e4a3b]">
+                    No documents found matching your search.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DisclosureFormPage({
+  editing,
+  onCancel,
+  onSaved,
+}: {
+  editing: MandatoryDocument | null;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const [form, setForm] = useState<MandatoryDocument>(() => editing || {
+    title: "",
+    category: "Affiliation & Society",
+    filename: "",
+    fileSize: "",
+    pdfUrl: "",
+    description: "",
+    isAvailable: true,
+    isVisible: true,
+    displayOrder: frontendDisclosures.length + 1,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setForm(editing || {
+      title: "",
+      category: "Affiliation & Society",
+      filename: "",
+      fileSize: "",
+      pdfUrl: "",
+      description: "",
+      isAvailable: true,
+      isVisible: true,
+      displayOrder: frontendDisclosures.length + 1,
+    });
+  }, [editing]);
+
+  const choosePdf = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    try {
+      const sizeKb = Math.round(file.size / 1024);
+      const fileSize = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setForm((curr) => ({
+          ...curr,
+          pdfUrl: reader.result as string,
+          filename: file.name,
+          fileSize,
+          title: curr.title || file.name.replace(/\.[^/.]+$/, "").replace(/^[0-9]+[-\s_]*/, ""),
+        }));
+        toast({ title: "File selected", description: `${file.name} (${fileSize})` });
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast({
+        title: "Unable to read document",
+        description: error instanceof Error ? error.message : "Please try another file.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const save = async () => {
+    if (!form.title.trim()) {
+      toast({ title: "Title required", description: "Please enter the document name or title.", variant: "destructive" });
+      return;
+    }
+    if (!form.pdfUrl.trim()) {
+      toast({ title: "PDF required", description: "Please upload a document file or provide a PDF URL.", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const payload = disclosureToPayload(
+        {
+          ...form,
+          filename: form.filename || `${form.title}.pdf`,
+          fileSize: form.fileSize || "PDF Document",
+          isVisible: form.isVisible !== false,
+          isAvailable: form.isAvailable !== false,
+        },
+        form.displayOrder || 0
+      );
+
+      if (form.adminId) {
+        await updateContent("disclosure", form.adminId, payload);
+      } else {
+        await createContent("disclosure", payload);
+      }
+      toast({ title: editing ? "Document updated successfully" : "Document added successfully" });
+      onSaved();
+    } catch (error) {
+      toast({
+        title: "Unable to save document",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-7">
+        <h1 className="text-[30px] font-bold text-[#4a2b22]">
+          {editing ? "Edit Mandatory Document" : "Add Mandatory Document"}
+        </h1>
+        <p className="mt-1 text-[#6e4a3b]">
+          {editing
+            ? "Update this statutory compliance certificate or institutional document."
+            : "Add a new document to the Mandatory Disclosure compliance repository."}
+        </p>
+      </div>
+
+      <div className="max-w-4xl rounded-2xl border border-[#e5ded4] bg-white p-8 shadow-sm">
+        <h2 className="text-lg font-bold">Document Details</h2>
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="doc-title">
+              Document Name / Title <span className="text-red-600">*</span>
+            </Label>
+            <Input
+              id="doc-title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="e.g. Fire Safety Certificate, Affiliation Certificate..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select
+              value={form.category || "Affiliation & Society"}
+              onValueChange={(val) => setForm({ ...form, category: val })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Affiliation & Society">Affiliation & Society</SelectItem>
+                <SelectItem value="Safety & Infrastructure">Safety & Infrastructure</SelectItem>
+                <SelectItem value="Academic & Compliance">Academic & Compliance</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="doc-order">Display Order / Sl No</Label>
+            <Input
+              id="doc-order"
+              type="number"
+              min="1"
+              value={form.displayOrder || ""}
+              onChange={(e) => setForm({ ...form, displayOrder: Number(e.target.value || 0) })}
+              placeholder="Auto"
+            />
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label>Document File (PDF Upload)</Label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <label className="flex h-10 cursor-pointer items-center justify-center rounded-lg border border-[#e5ded4] bg-[#faf8f5] px-4 text-sm font-semibold text-[#3b241d] hover:bg-[#f1eee9] transition-colors">
+                <Upload className="mr-2 h-4 w-4 text-[#137a49]" />
+                <span>Upload PDF Document</span>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="sr-only"
+                  onChange={(e) => choosePdf(e.target.files)}
+                />
+              </label>
+              {form.filename && (
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#137a49]">
+                  <FileText className="h-4 w-4" />
+                  <span>{form.filename}</span>
+                  {form.fileSize && <span className="text-[#6e4a3b]">({form.fileSize})</span>}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="doc-url">PDF URL / Path (or Direct Link)</Label>
+            <Input
+              id="doc-url"
+              value={form.pdfUrl}
+              onChange={(e) => setForm({ ...form, pdfUrl: e.target.value })}
+              placeholder="/documents/filename.pdf or https://..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="doc-filename">Filename</Label>
+            <Input
+              id="doc-filename"
+              value={form.filename}
+              onChange={(e) => setForm({ ...form, filename: e.target.value })}
+              placeholder="e.g. 5-Fire safety certificate.pdf"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="doc-size">File Size</Label>
+            <Input
+              id="doc-size"
+              value={form.fileSize}
+              onChange={(e) => setForm({ ...form, fileSize: e.target.value })}
+              placeholder="e.g. 383 KB"
+            />
+          </div>
+
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="doc-desc">Description / Scope (optional)</Label>
+            <Textarea
+              id="doc-desc"
+              rows={3}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Details regarding regulatory authority, certificate validity, or circular reference..."
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-8 sm:col-span-2 pt-2">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Switch
+                checked={form.isVisible !== false}
+                onCheckedChange={(checked) => setForm({ ...form, isVisible: checked })}
+              />
+              <span className="text-sm font-medium">Published (Visible on website table)</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Switch
+                checked={form.isAvailable !== false}
+                onCheckedChange={(checked) => setForm({ ...form, isAvailable: checked })}
+              />
+              <span className="text-sm font-medium">Available for download</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="mt-8 flex justify-end gap-3 border-t border-[#e5ded4] pt-5">
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            className="bg-[#137a49] hover:bg-[#0f663d]"
+            disabled={isSaving}
+            onClick={save}
+          >
+            {editing ? "Save Document" : "Add Document"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const AdminDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -2557,6 +3078,7 @@ const AdminDashboard = () => {
   const [editingEvent, setEditingEvent] = useState<EventDisplayItem | null>(null);
   const [editingTestimonial, setEditingTestimonial] = useState<TestimonialDisplayItem | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [editingDisclosure, setEditingDisclosure] = useState<MandatoryDocument | null>(null);
   const [teacherOrderDirty, setTeacherOrderDirty] = useState(false);
   const [openGroup, setOpenGroup] = useState<NavGroupId | null>(() => groupForSection(sectionFromAdminPath(location.pathname)));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -2576,6 +3098,7 @@ const AdminDashboard = () => {
     if (nextSection !== "event-edit") setEditingEvent(null);
     if (nextSection !== "testimonial-edit") setEditingTestimonial(null);
     if (nextSection !== "teacher-add") setEditingTeacher(null);
+    if (nextSection !== "disclosure-add") setEditingDisclosure(null);
   }, [location.pathname]);
 
   const logout = async () => {
@@ -2593,6 +3116,7 @@ const AdminDashboard = () => {
     if (next !== "event-edit") setEditingEvent(null);
     if (next !== "testimonial-edit") setEditingTestimonial(null);
     if (next !== "teacher-add") setEditingTeacher(null);
+    if (next !== "disclosure-add") setEditingDisclosure(null);
     setSection(next);
     setMobileOpen(false);
     navigate(adminPathForSection(next));
@@ -2621,6 +3145,12 @@ const AdminDashboard = () => {
     setSection("teacher-add");
     setMobileOpen(false);
     navigate("/admin/teachers/add");
+  };
+  const editDisclosure = (doc: MandatoryDocument) => {
+    setEditingDisclosure(doc);
+    setSection("disclosure-add");
+    setMobileOpen(false);
+    navigate("/admin/disclosures/add");
   };
   const toggleGroup = (group: NavGroupId) => setOpenGroup((current) => current === group ? null : group);
   const isActive = (...sections: Section[]) => sections.includes(section);
@@ -2659,6 +3189,10 @@ const AdminDashboard = () => {
               <NavButton nested active={section === "teacher-add"} icon={FilePlus} label="Add New" onClick={() => go("teacher-add")} />
               <NavButton nested active={section === "teacher-list"} icon={Users} label="View" onClick={() => go("teacher-list")} />
             </NavGroup>
+            <NavGroup id="disclosures" icon={ShieldCheck} label="Mandatory Disclosure" active={isActive("disclosure-add", "disclosure-edit", "disclosure-list")} open={openGroup === "disclosures"} onToggle={toggleGroup}>
+              <NavButton nested active={section === "disclosure-add"} icon={FilePlus} label="Add Document" onClick={() => { setEditingDisclosure(null); go("disclosure-add"); }} />
+              <NavButton nested active={isActive("disclosure-list", "disclosure-edit")} icon={FileText} label="View Documents" onClick={() => go("disclosure-list")} />
+            </NavGroup>
           </nav>
           <div className="shrink-0 border-t border-[#e8e0d7] bg-[#f1eee9] p-2.5">
             <div className="flex items-center gap-2.5 rounded-lg border border-[#e8e0d7] bg-white p-2.5">
@@ -2692,6 +3226,8 @@ const AdminDashboard = () => {
             {section === "testimonial-edit" && <TestimonialFormPage editing={editingTestimonial} onCancel={() => go("testimonial-list")} onSaved={() => go("testimonial-list")} />}
             {section === "teacher-list" && <TeachersViewPage onAdd={() => go("teacher-add")} onEdit={editTeacher} onDirtyChange={setTeacherOrderDirty} />}
             {section === "teacher-add" && <TeacherFormPage editing={editingTeacher} onCancel={() => go("teacher-list")} onSaved={() => go("teacher-list")} />}
+            {section === "disclosure-list" && <DisclosuresViewPage onAdd={() => { setEditingDisclosure(null); go("disclosure-add"); }} onEdit={editDisclosure} />}
+            {section === "disclosure-add" && <DisclosureFormPage editing={editingDisclosure} onCancel={() => { setEditingDisclosure(null); go("disclosure-list"); }} onSaved={() => { setEditingDisclosure(null); go("disclosure-list"); }} />}
           </div>
         </main>
       </div>

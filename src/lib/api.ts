@@ -10,6 +10,7 @@ export const ENQUIRY_STATUSES = [
 import { allSchoolPhotos } from "@/data/galleryPhotos";
 import { authenticTestimonials } from "@/data/testimonials";
 import { staffMembers } from "@/data/staff";
+import { mandatoryDocuments } from "@/data/disclosures";
 
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 export type EnquirySource = "home" | "contact";
@@ -301,6 +302,28 @@ const initialTeacherContent: AdminContentItem[] = staffMembers.map((staff, index
   updated_at: "2026-10-01T00:00:00Z",
 }));
 
+const initialDisclosureContent: AdminContentItem[] = mandatoryDocuments.map((doc, index) => ({
+  id: `doc-${doc.id}`,
+  type: "disclosure",
+  title: doc.title,
+  subtitle: `${doc.filename} (${doc.fileSize})`,
+  body: doc.description,
+  image_url: doc.pdfUrl,
+  category: doc.category,
+  is_visible: true,
+  display_order: index + 1,
+  fields: {
+    filename: doc.filename,
+    fileSize: doc.fileSize,
+    pdfUrl: doc.pdfUrl,
+    description: doc.description,
+    category: doc.category,
+    isAvailable: doc.isAvailable !== false,
+  },
+  created_at: "2026-10-01T00:00:00Z",
+  updated_at: "2026-10-01T00:00:00Z",
+}));
+
 const emptyStaticData = (): StaticData => ({
   enquiries: [],
   followUps: [],
@@ -311,6 +334,7 @@ const emptyStaticData = (): StaticData => ({
     video: initialVideoContent,
     testimonial: initialTestimonialContent,
     teacher: initialTeacherContent,
+    disclosure: initialDisclosureContent,
   },
 });
 
@@ -335,6 +359,7 @@ function readStaticData(): StaticData {
         video: Array.isArray(parsed.content?.video) && parsed.content.video.length > 0 ? parsed.content.video : initialVideoContent,
         testimonial: Array.isArray(parsed.content?.testimonial) && parsed.content.testimonial.length > 0 ? parsed.content.testimonial : initialTestimonialContent,
         teacher: Array.isArray(parsed.content?.teacher) && parsed.content.teacher.length > 0 ? parsed.content.teacher : initialTeacherContent,
+        disclosure: Array.isArray(parsed.content?.disclosure) && parsed.content.disclosure.length > 0 ? parsed.content.disclosure : initialDisclosureContent,
       },
     };
   } catch {
@@ -443,7 +468,7 @@ export type AdminUser = {
   email: string;
 };
 
-export type AdminContentType = "news" | "event" | "gallery" | "video" | "testimonial" | "teacher";
+export type AdminContentType = "news" | "event" | "gallery" | "video" | "testimonial" | "teacher" | "disclosure";
 
 export type AdminContentItem = {
   id: string;
