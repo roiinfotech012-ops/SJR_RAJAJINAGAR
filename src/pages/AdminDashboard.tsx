@@ -248,46 +248,58 @@ function AdminLogin({ onLogin }: { onLogin: (user: AdminUser) => void }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="rounded-lg border bg-card text-card-foreground shadow-sm w-full max-w-sm border-t-4 border-indian-green">
-        <div className="flex flex-col space-y-1.5 p-6 items-center text-center">
-          <img src={sjreLogo} alt="SJR Public School Logo" className="h-14 w-14 object-contain mb-1" />
-          <h3 className="text-2xl font-semibold leading-none tracking-tight">SJRPS Admin Login</h3>
-          <p className="text-xs text-muted-foreground mt-1">SJR Public School - Rajajinagar</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f6f1] p-4 sm:p-6">
+      <div
+        className="w-full rounded-2xl border border-[#e5ded4] bg-white p-8 sm:p-10 shadow-lg flex flex-col justify-center"
+        style={{ maxWidth: "420px", width: "100%" }}
+      >
+        <div className="flex flex-col items-center text-center mb-6">
+          <img
+            src={sjreLogo}
+            alt="SJR Public School Logo"
+            className="h-16 w-16 rounded-full border border-[#e5ded4] p-1.5 object-contain mb-3 bg-white shadow-sm"
+          />
+          <h2 className="text-2xl font-bold text-[#3b241d] tracking-tight">Admin Login</h2>
+          <p className="text-xs sm:text-sm text-[#6e4a3b] mt-1">SJR Public School - Rajajinagar</p>
         </div>
-        <div className="p-6 pt-0">
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium leading-none" htmlFor="admin-email">Email</Label>
-              <Input
-                id="admin-email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                className="h-10"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium leading-none" htmlFor="admin-password">Password</Label>
-              <Input
-                id="admin-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                className="h-10"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full h-10 bg-indian-green hover:bg-indian-green/90 text-white font-medium"
-            >
-              {isSubmitting ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </div>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-[#3b241d]" htmlFor="admin-email">
+              Username / Email
+            </Label>
+            <Input
+              id="admin-email"
+              type="text"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin@sjrpublicschool.edu.in"
+              required
+              className="h-10 bg-[#faf8f5] border-[#e5ded4] focus:border-[#137a49]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-[#3b241d]" htmlFor="admin-password">
+              Password
+            </Label>
+            <Input
+              id="admin-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="••••••••"
+              required
+              className="h-10 bg-[#faf8f5] border-[#e5ded4] focus:border-[#137a49]"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full h-11 bg-[#137a49] hover:bg-[#0f663d] text-white font-semibold rounded-lg shadow-sm mt-3"
+          >
+            <Lock className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
       </div>
     </div>
   );
