@@ -85,6 +85,7 @@ import {
   Newspaper,
   PanelLeft,
   Phone,
+  Plus,
   Search,
   Save,
   Trash2,
@@ -1539,12 +1540,39 @@ const compressImageFile = async (file: File): Promise<{ name: string; src: strin
 
 const readImageFiles = (files: File[]) => Promise.all(files.map(compressImageFile));
 
+const customGalleryCategoriesKey = "sjr_custom_gallery_categories";
+const customVideoCategoriesKey = "sjr_custom_video_categories";
+
+const getStoredCustomCategories = (key: string): { id: string; label: string }[] => {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const storeCustomCategory = (key: string, category: { id: string; label: string }) => {
+  try {
+    const existing = getStoredCustomCategories(key);
+    if (!existing.some((c) => c.id === category.id)) {
+      existing.push(category);
+      window.localStorage.setItem(key, JSON.stringify(existing));
+    }
+  } catch {}
+};
+
 function GalleryImagePage() {
   const { toast } = useToast();
   const [items, setItems] = useState<AdminContentItem[]>([]);
+  const [customCats, setCustomCats] = useState<{ id: string; label: string }[]>(() =>
+    getStoredCustomCategories(customGalleryCategoriesKey)
+  );
   const [selectedCategory, setSelectedCategory] = useState("");
   const [pendingImages, setPendingImages] = useState<{ name: string; src: string }[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -1579,20 +1607,60 @@ function GalleryImagePage() {
       label: `${cat.label} (${grouped.get(cat.id) || 0})`,
     }));
 
+    // Add custom stored categories
+    customCats.forEach((cat) => {
+      if (!result.some((r) => r.id === cat.id)) {
+        result.push({
+          id: cat.id,
+          label: `${cat.label} (${grouped.get(cat.id) || 0})`,
+        });
+      }
+    });
+
+    // Add any other categories existing in items
     grouped.forEach((count, id) => {
-      if (!defaultCats.some((d) => d.id === id)) {
+      if (!result.some((r) => r.id === id)) {
         result.push({ id, label: `${categoryLabel(id)} (${count})` });
       }
     });
 
     return result;
-  }, [items]);
+  }, [items, customCats]);
 
   useEffect(() => {
     if (!selectedCategory && categories[0]) setSelectedCategory(categories[0].id);
   }, [categories, selectedCategory]);
 
   const categoryImages = items.filter((item) => (item.category || "gallery") === selectedCategory);
+
+  const handleCreateCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      toast({ title: "Category name required", description: "Please enter a name for the new category.", variant: "destructive" });
+      return;
+    }
+    const cleanId = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    if (!cleanId) {
+      toast({ title: "Invalid category name", description: "Please use letters and numbers.", variant: "destructive" });
+      return;
+    }
+    const exists = categories.some((c) => c.id === cleanId);
+    if (exists) {
+      setSelectedCategory(cleanId);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
+      toast({ title: "Category already exists", description: `Selected "${name}".` });
+      return;
+    }
+
+    const newCat = { id: cleanId, label: name };
+    storeCustomCategory(customGalleryCategoriesKey, newCat);
+    setCustomCats((current) => [...current, newCat]);
+    setSelectedCategory(cleanId);
+    setIsAddingCategory(false);
+    setNewCategoryName("");
+    toast({ title: "Category created", description: `Category "${name}" created and selected. You can now upload images to it.` });
+  };
 
   const chooseFiles = async (files: FileList | null) => {
     const imageFiles = Array.from(files || []).filter((file) => file.type.startsWith("image/"));
@@ -1615,22 +1683,24 @@ function GalleryImagePage() {
       return;
     }
 
+    const catLabel = customCats.find((c) => c.id === selectedCategory)?.label || categoryLabel(selectedCategory);
+
     setIsSaving(true);
     try {
       const start = categoryImages.length;
       await Promise.all(pendingImages.map((image, index) => createContent("gallery", {
-        title: image.name.replace(/\.[^.]+$/, "") || `${categoryLabel(selectedCategory)} ${start + index + 1}`,
-        subtitle: categoryLabel(selectedCategory),
+        title: image.name.replace(/\.[^.]+$/, "") || `${catLabel} ${start + index + 1}`,
+        subtitle: catLabel,
         body: "",
         image_url: image.src,
         category: selectedCategory,
         is_visible: true,
         display_order: start + index + 1,
-        fields: { originalFileName: image.name },
+        fields: { originalFileName: image.name, categoryLabel: catLabel },
       })));
       setPendingImages([]);
       await load();
-      toast({ title: "Gallery images saved" });
+      toast({ title: "Gallery images saved successfully" });
     } catch (error) {
       toast({ title: "Unable to save images", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
     } finally {
@@ -1658,14 +1728,93 @@ function GalleryImagePage() {
 
       <div className="max-w-6xl space-y-7">
         <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold">1. Choose a category</h2>
-          <div className="mt-7 max-w-3xl space-y-2">
-            <Label>Gallery category / album</Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-              <SelectContent>{categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.label}</SelectItem>)}</SelectContent>
-            </Select>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-bold">1. Choose a category</h2>
+            {!isAddingCategory && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAddingCategory(true)}
+                className="self-start text-[#137a49] border-[#137a49]/30 hover:bg-[#137a49]/10"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Add New Category
+              </Button>
+            )}
           </div>
+
+          {isAddingCategory ? (
+            <div className="mt-5 max-w-xl rounded-xl border border-[#137a49]/30 bg-[#f4f9f6] p-4">
+              <p className="text-sm font-bold text-[#137a49]">Create New Category / Album</p>
+              <p className="mt-0.5 text-xs text-[#6e4a3b]">Enter the name for your new photo gallery album.</p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  autoFocus
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateCategory();
+                    } else if (e.key === "Escape") {
+                      setIsAddingCategory(false);
+                    }
+                  }}
+                  placeholder="e.g. Science Exhibition, Annual Day 2026..."
+                  className="bg-white"
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleCreateCategory}
+                    className="bg-[#137a49] hover:bg-[#0f663d] text-white"
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 max-w-3xl space-y-2">
+              <Label>Gallery category / album</Label>
+              <Select
+                value={selectedCategory}
+                onValueChange={(val) => {
+                  if (val === "__new_category__") {
+                    setIsAddingCategory(true);
+                  } else {
+                    setSelectedCategory(val);
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem
+                    value="__new_category__"
+                    className="text-[#137a49] font-bold border-t border-[#e5ded4] mt-1 pt-2 cursor-pointer"
+                  >
+                    + Add New Category...
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
@@ -1715,10 +1864,15 @@ function GalleryVideoPage() {
   const { toast } = useToast();
   const [galleryItems, setGalleryItems] = useState<AdminContentItem[]>([]);
   const [videos, setVideos] = useState<AdminContentItem[]>([]);
+  const [customCats, setCustomCats] = useState<{ id: string; label: string }[]>(() =>
+    getStoredCustomCategories(customVideoCategoriesKey)
+  );
   const [selectedCategory, setSelectedCategory] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [title, setTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -1745,15 +1899,63 @@ function GalleryVideoPage() {
       const category = item.category || "campus";
       grouped.set(category, (grouped.get(category) || 0) + 1);
     });
-    return defaultCats.map((cat) => ({
+    const result = defaultCats.map((cat) => ({
       id: cat.id,
       label: `${cat.label} (${grouped.get(cat.id) || 0})`,
     }));
-  }, [videos]);
+
+    // Add custom stored video categories
+    customCats.forEach((cat) => {
+      if (!result.some((r) => r.id === cat.id)) {
+        result.push({
+          id: cat.id,
+          label: `${cat.label} (${grouped.get(cat.id) || 0})`,
+        });
+      }
+    });
+
+    // Add any other categories existing in videos
+    grouped.forEach((count, id) => {
+      if (!result.some((r) => r.id === id)) {
+        result.push({ id, label: `${categoryLabel(id)} (${count})` });
+      }
+    });
+
+    return result;
+  }, [videos, customCats]);
 
   useEffect(() => {
     if (!selectedCategory && categories[0]) setSelectedCategory(categories[0].id);
   }, [categories, selectedCategory]);
+
+  const handleCreateCategory = () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      toast({ title: "Category name required", description: "Please enter a name for the new category.", variant: "destructive" });
+      return;
+    }
+    const cleanId = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    if (!cleanId) {
+      toast({ title: "Invalid category name", description: "Please use letters and numbers.", variant: "destructive" });
+      return;
+    }
+    const exists = categories.some((c) => c.id === cleanId);
+    if (exists) {
+      setSelectedCategory(cleanId);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
+      toast({ title: "Category already exists", description: `Selected "${name}".` });
+      return;
+    }
+
+    const newCat = { id: cleanId, label: name };
+    storeCustomCategory(customVideoCategoriesKey, newCat);
+    setCustomCats((current) => [...current, newCat]);
+    setSelectedCategory(cleanId);
+    setIsAddingCategory(false);
+    setNewCategoryName("");
+    toast({ title: "Category created", description: `Category "${name}" created and selected. You can now add videos to it.` });
+  };
 
   const save = async () => {
     const isDirectVideo = videoUrl.trim().endsWith(".mp4") || videoUrl.trim().startsWith("/videos/");
@@ -1767,11 +1969,13 @@ function GalleryVideoPage() {
       return;
     }
 
+    const catLabel = customCats.find((c) => c.id === selectedCategory)?.label || categoryLabel(selectedCategory);
+
     setIsSaving(true);
     try {
       await createContent("video", {
         title: title.trim() || "Untitled video",
-        subtitle: categoryLabel(selectedCategory),
+        subtitle: catLabel,
         body: "",
         image_url: videoUrl.trim(),
         category: selectedCategory,
@@ -1781,6 +1985,7 @@ function GalleryVideoPage() {
           youtubeId: isDirectVideo ? "" : youtubeId,
           isDirectVideo,
           thumbnail: isDirectVideo ? "/images/Photos/School Building/school-building-main-gate.jpg" : undefined,
+          categoryLabel: catLabel,
         },
       });
       setVideoUrl("");
@@ -1814,14 +2019,93 @@ function GalleryVideoPage() {
 
       <div className="max-w-5xl space-y-7">
         <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold">1. Choose a video category</h2>
-          <div className="mt-7 max-w-3xl space-y-2">
-            <Label>Video category</Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-              <SelectContent>{categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.label}</SelectItem>)}</SelectContent>
-            </Select>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-lg font-bold">1. Choose a video category</h2>
+            {!isAddingCategory && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAddingCategory(true)}
+                className="self-start text-[#137a49] border-[#137a49]/30 hover:bg-[#137a49]/10"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Add New Category
+              </Button>
+            )}
           </div>
+
+          {isAddingCategory ? (
+            <div className="mt-5 max-w-xl rounded-xl border border-[#137a49]/30 bg-[#f4f9f6] p-4">
+              <p className="text-sm font-bold text-[#137a49]">Create New Video Category</p>
+              <p className="mt-0.5 text-xs text-[#6e4a3b]">Enter the name for your new video category.</p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  autoFocus
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateCategory();
+                    } else if (e.key === "Escape") {
+                      setIsAddingCategory(false);
+                    }
+                  }}
+                  placeholder="e.g. Sports Day 2026, Science Fair..."
+                  className="bg-white"
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleCreateCategory}
+                    className="bg-[#137a49] hover:bg-[#0f663d] text-white"
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 max-w-3xl space-y-2">
+              <Label>Video category</Label>
+              <Select
+                value={selectedCategory}
+                onValueChange={(val) => {
+                  if (val === "__new_category__") {
+                    setIsAddingCategory(true);
+                  } else {
+                    setSelectedCategory(val);
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem
+                    value="__new_category__"
+                    className="text-[#137a49] font-bold border-t border-[#e5ded4] mt-1 pt-2 cursor-pointer"
+                  >
+                    + Add New Category...
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
