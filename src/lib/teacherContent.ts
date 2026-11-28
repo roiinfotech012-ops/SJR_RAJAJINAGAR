@@ -17,6 +17,7 @@ export interface Teacher {
   isFeatured?: boolean;
   isVisible?: boolean;
   displayOrder?: number;
+  createdAt?: string;
 }
 
 export const defaultFeaturedTeacherNames = new Set([
@@ -59,6 +60,7 @@ export const adminTeacherToDisplay = (item: AdminContentItem): Teacher => ({
   isFeatured: item.fields?.featured === true,
   isVisible: item.is_visible,
   displayOrder: item.display_order || 0,
+  createdAt: item.published_at || item.created_at,
 });
 
 const deletedTeachersKey = "sjr_deleted_teachers";
@@ -80,6 +82,14 @@ export const markTeacherDeleted = (name: string) => {
       current.push(clean);
       window.localStorage.setItem(deletedTeachersKey, JSON.stringify(current));
     }
+  } catch {}
+};
+
+export const unmarkTeacherDeleted = (name: string) => {
+  try {
+    const clean = name.trim().toLowerCase();
+    const next = getDeletedTeacherNames().filter((item) => item !== clean);
+    window.localStorage.setItem(deletedTeachersKey, JSON.stringify(next));
   } catch {}
 };
 
@@ -107,8 +117,8 @@ export const mergeTeacherItems = (adminItems: AdminContentItem[] = []): Teacher[
   return Array.from(byName.values())
     .filter((t) => !deletedNames.has(t.name.toLowerCase().trim()))
     .sort((a, b) => {
-      const aCreated = a.adminItem?.created_at ? new Date(a.adminItem.created_at).getTime() : 0;
-      const bCreated = b.adminItem?.created_at ? new Date(b.adminItem.created_at).getTime() : 0;
+      const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       if (aCreated && bCreated && aCreated !== bCreated) return bCreated - aCreated;
       if (aCreated && !bCreated) return -1;
       if (!aCreated && bCreated) return 1;

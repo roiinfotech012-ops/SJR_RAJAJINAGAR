@@ -43,6 +43,7 @@ import {
   adminTeacherToDisplay,
   getDeletedTeacherNames,
   markTeacherDeleted,
+  unmarkTeacherDeleted,
   mergeTeacherItems,
   teacherToPayload,
   teacherOrderKey,
@@ -2828,6 +2829,9 @@ function TeachersViewPage({ onAdd, onEdit, onDirtyChange }: { onAdd: () => void;
         await deleteContent("teacher", teacher.adminId);
       }
       markTeacherDeleted(teacher.name);
+      setOrderedTeachers((current) =>
+        current.filter((item) => item.name.toLowerCase().trim() !== teacher.name.toLowerCase().trim())
+      );
       await load();
       toast({ title: "Teacher deleted successfully" });
     } catch (error) {
@@ -2945,6 +2949,7 @@ function TeacherFormPage({ editing, onCancel, onSaved }: { editing: Teacher | nu
     }
     setIsSaving(true);
     try {
+      unmarkTeacherDeleted(form.name);
       const payload = teacherToPayload({ ...form, isVisible: form.isVisible !== false }, form.displayOrder || 0);
       if (form.adminId) await updateContent("teacher", form.adminId, payload);
       else await createContent("teacher", payload);

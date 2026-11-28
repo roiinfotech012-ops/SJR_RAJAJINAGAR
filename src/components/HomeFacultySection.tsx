@@ -11,10 +11,10 @@ const HomeFacultySection = () => {
 
   useEffect(() => {
     let isMounted = true;
-    getPublicContent("teacher")
-      .then((items) => {
-        if (isMounted && Array.isArray(items)) {
-          setAdminTeachers(items);
+    getPublicContent("teacher", 500)
+      .then((result) => {
+        if (isMounted && Array.isArray(result?.items)) {
+          setAdminTeachers(result.items);
         }
       })
       .catch(() => {});
