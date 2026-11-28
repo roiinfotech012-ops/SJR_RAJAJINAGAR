@@ -12,6 +12,7 @@ import { authenticTestimonials } from "@/data/testimonials";
 import { staffMembers } from "@/data/staff";
 import { mandatoryDocuments } from "@/data/disclosures";
 import { defaultBannerSlides } from "@/lib/bannerContent";
+import { defaultLatestNewsItems } from "@/lib/latestNewsContent";
 
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 export type EnquirySource = "home" | "contact";
@@ -343,6 +344,22 @@ const initialBannerContent: AdminContentItem[] = defaultBannerSlides.map((banner
   updated_at: "2026-10-01T00:00:00Z",
 }));
 
+const initialLatestNewsContent: AdminContentItem[] = defaultLatestNewsItems.map((item, index) => ({
+  id: item.id || `latest-news-${index + 1}`,
+  type: "latest_news",
+  title: item.text,
+  subtitle: "",
+  body: item.text,
+  image_url: "",
+  category: "Latest News",
+  published_at: null,
+  is_visible: true,
+  display_order: item.displayOrder || index + 1,
+  fields: {},
+  created_at: "2026-10-01T00:00:00Z",
+  updated_at: "2026-10-01T00:00:00Z",
+}));
+
 const emptyStaticData = (): StaticData => ({
   enquiries: [],
   followUps: [],
@@ -355,6 +372,7 @@ const emptyStaticData = (): StaticData => ({
     teacher: initialTeacherContent,
     disclosure: initialDisclosureContent,
     banner: initialBannerContent,
+    latest_news: initialLatestNewsContent,
   },
 });
 
@@ -381,6 +399,7 @@ function readStaticData(): StaticData {
         teacher: Array.isArray(parsed.content?.teacher) && parsed.content.teacher.length > 0 ? parsed.content.teacher : initialTeacherContent,
         disclosure: Array.isArray(parsed.content?.disclosure) && parsed.content.disclosure.length > 0 ? parsed.content.disclosure : initialDisclosureContent,
         banner: Array.isArray(parsed.content?.banner) && parsed.content.banner.length > 0 ? parsed.content.banner : initialBannerContent,
+        latest_news: Array.isArray(parsed.content?.latest_news) && parsed.content.latest_news.length > 0 ? parsed.content.latest_news : initialLatestNewsContent,
       },
     };
   } catch {
@@ -489,7 +508,7 @@ export type AdminUser = {
   email: string;
 };
 
-export type AdminContentType = "news" | "event" | "gallery" | "video" | "testimonial" | "teacher" | "disclosure" | "banner";
+export type AdminContentType = "news" | "event" | "gallery" | "video" | "testimonial" | "teacher" | "disclosure" | "banner" | "latest_news";
 
 export type AdminContentItem = {
   id: string;

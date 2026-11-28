@@ -63,6 +63,14 @@ import {
   markBannerDeleted,
   unmarkBannerDeleted,
 } from "@/lib/bannerContent";
+import {
+  type LatestNewsItem,
+  defaultLatestNewsItems,
+  mergeLatestNewsItems,
+  latestNewsToPayload,
+  markLatestNewsDeleted,
+  unmarkLatestNewsDeleted,
+} from "@/lib/latestNewsContent";
 import { photos as frontendGalleryPhotos } from "@/pages/gallery/PhotoGallery";
 import { videos as frontendGalleryVideos } from "@/pages/gallery/VideoGallery";
 import sjreLogo from "@/assets/sjre.png";
@@ -129,8 +137,10 @@ type Section =
   | "disclosure-edit"
   | "disclosure-list"
   | "banner-add"
-  | "banner-list";
-type NavGroupId = "enquiries" | "news" | "events" | "gallery" | "testimonials" | "teachers" | "disclosures" | "banners";
+  | "banner-list"
+  | "latest-news-add"
+  | "latest-news-list";
+type NavGroupId = "enquiries" | "news" | "events" | "gallery" | "testimonials" | "teachers" | "disclosures" | "banners" | "latest-news";
 
 const sourceLabels: Record<EnquirySource, string> = { home: "Home", contact: "Contact" };
 const contentLabels: Record<AdminContentType, string> = {
@@ -142,6 +152,7 @@ const contentLabels: Record<AdminContentType, string> = {
   teacher: "Teachers",
   disclosure: "Mandatory Disclosure",
   banner: "Banner",
+  latest_news: "Latest News",
 };
 
 const statusStyles: Record<EnquiryStatus, string> = {
@@ -201,6 +212,8 @@ const sectionFromAdminPath = (pathname: string): Section => {
   if (pathname.startsWith("/admin/disclosures") || pathname.startsWith("/admin/mandatory-disclosure")) return "disclosure-list";
   if (pathname.startsWith("/admin/banners/add")) return "banner-add";
   if (pathname.startsWith("/admin/banners")) return "banner-list";
+  if (pathname.startsWith("/admin/latest-news/add")) return "latest-news-add";
+  if (pathname.startsWith("/admin/latest-news")) return "latest-news-list";
   return "dashboard";
 };
 
@@ -225,6 +238,8 @@ const adminPathForSection = (section: Section) => {
   if (section === "disclosure-list") return "/admin/disclosures";
   if (section === "banner-add") return "/admin/banners/add";
   if (section === "banner-list") return "/admin/banners";
+  if (section === "latest-news-add") return "/admin/latest-news/add";
+  if (section === "latest-news-list") return "/admin/latest-news";
   return "/admin";
 };
 
@@ -237,6 +252,7 @@ const groupForSection = (section: Section): NavGroupId | null => {
   if (section === "teacher-add" || section === "teacher-list") return "teachers";
   if (section === "disclosure-add" || section === "disclosure-edit" || section === "disclosure-list") return "disclosures";
   if (section === "banner-add" || section === "banner-list") return "banners";
+  if (section === "latest-news-add" || section === "latest-news-list") return "latest-news";
   return null;
 };
 
@@ -345,6 +361,8 @@ const titleForSection = (section: Section) =>
     "disclosure-list": "View Mandatory Documents",
     "banner-add": "Add Banner",
     "banner-list": "View Banners",
+    "latest-news-add": "Add Latest News",
+    "latest-news-list": "View Latest News",
   }[section]);
 
 function NavButton({ active, icon: Icon, label, onClick, nested = false }: { active: boolean; icon: LucideIcon; label: string; onClick: () => void; nested?: boolean }) {
@@ -417,6 +435,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
     teachers: 0,
     disclosures: 0,
     banners: 0,
+    latestNews: 0,
   });
 
   useEffect(() => {
@@ -430,8 +449,9 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
       getContent("teacher"),
       getContent("disclosure"),
       getContent("banner"),
+      getContent("latest_news"),
     ])
-      .then(([result, newsResult, eventResult, galleryResult, videoResult, testimonialResult, teacherResult, disclosureResult, bannerResult]) => {
+      .then(([result, newsResult, eventResult, galleryResult, videoResult, testimonialResult, teacherResult, disclosureResult, bannerResult, latestNewsResult]) => {
         setStats(result);
         const newsItems = mergeNewsItems(newsResult.items);
         setDashboardCounts({
@@ -444,6 +464,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
           teachers: mergeTeacherItems(teacherResult.items).length,
           disclosures: mergeDisclosureItems(disclosureResult.items).length,
           banners: mergeBannerItems(bannerResult.items).length,
+          latestNews: mergeLatestNewsItems(latestNewsResult.items).length,
         });
       })
       .catch(() => undefined);
@@ -490,6 +511,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
             { label: "Add a teacher", section: "teacher-add" as Section },
             { label: "Add a mandatory document", section: "disclosure-add" as Section },
             { label: "Add a homepage banner", section: "banner-add" as Section },
+            { label: "Add latest news ticker", section: "latest-news-add" as Section },
           ].map((action) => (
             <button key={action.label} onClick={() => onNavigate(action.section)} className="flex items-center justify-between rounded-lg border border-[#e5ded4] px-4 py-3 text-left text-[15px] hover:bg-[#f8f6f1]">
               {action.label}
@@ -3858,6 +3880,248 @@ function BannerFormPage({
   );
 }
 
+function LatestNewsViewPage({
+  onAdd,
+  onEdit,
+}: {
+  onAdd: () => void;
+  onEdit: (item: LatestNewsItem) => void;
+}) {
+  const { toast } = useToast();
+  const [adminItems, setAdminItems] = useState<AdminContentItem[]>([]);
+  const [search, setSearch] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const result = await getContent("latest_news");
+      setAdminItems(result.items);
+    } catch (error) {
+      toast({
+        title: "Unable to load latest news",
+        description: error instanceof Error ? error.message : "Check API/database configuration.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const items = useMemo(() => mergeLatestNewsItems(adminItems), [adminItems]);
+  const visibleItems = items.filter((item) =>
+    item.text.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const remove = async (item: LatestNewsItem) => {
+    if (!window.confirm(`Are you sure you want to delete "${item.text}"?`)) return;
+    try {
+      if (item.adminId) {
+        await deleteContent("latest_news", item.adminId);
+      }
+      if (item.id) markLatestNewsDeleted(item.id);
+      markLatestNewsDeleted(item.text);
+      await load();
+      toast({ title: "Latest news item deleted" });
+    } catch (error) {
+      toast({
+        title: "Unable to delete item",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleVisibility = async (item: LatestNewsItem) => {
+    try {
+      const updated = { ...item, isVisible: item.isVisible === false };
+      const payload = latestNewsToPayload(updated, item.displayOrder || 0);
+      if (item.adminId) {
+        await updateContent("latest_news", item.adminId, payload);
+      } else {
+        await createContent("latest_news", payload);
+      }
+      await load();
+      toast({ title: updated.isVisible ? "Latest news published" : "Latest news hidden" });
+    } catch (error) {
+      toast({
+        title: "Unable to update visibility",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#4a2b22]">Latest News</h1>
+          <p className="mt-1 text-sm text-[#6e4a3b]">
+            {items.length} ticker announcements scrolling on the homepage — newly added items appear first.
+          </p>
+        </div>
+        <Button onClick={onAdd} className="bg-[#137a49] hover:bg-[#0f663d]">
+          <FilePlus className="mr-2 h-4 w-4" />
+          Add Latest News
+        </Button>
+      </div>
+
+      <div className="relative max-w-4xl">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#6e4a3b]" />
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search latest news..."
+          className="pl-9"
+        />
+      </div>
+
+      <div className="mt-5 max-w-4xl rounded-2xl border border-[#e5ded4] bg-white shadow-sm">
+        {visibleItems.map((item) => (
+          <div
+            key={item.id || item.text}
+            className="flex flex-col gap-3 border-b border-[#e5ded4] p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500">★</span>
+                <p className="font-semibold text-[#3b241d]">{item.text}</p>
+              </div>
+              <div className="mt-1.5 flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={item.isVisible !== false ? "border-green-200 bg-green-50 text-green-700" : "border-slate-200 bg-slate-100 text-slate-600"}
+                >
+                  {item.isVisible !== false ? "Published" : "Hidden"}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => toggleVisibility(item)}>
+                {item.isVisible !== false ? "Hide" : "Publish"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onEdit(item)}>
+                Edit
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => remove(item)} className="text-red-600">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        {visibleItems.length === 0 && (
+          <div className="p-10 text-center text-sm text-[#6e4a3b]">
+            No latest news items found.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LatestNewsFormPage({
+  editing,
+  onCancel,
+  onSaved,
+}: {
+  editing: LatestNewsItem | null;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const [form, setForm] = useState<LatestNewsItem>(() => editing || {
+    text: "",
+    isVisible: true,
+    displayOrder: defaultLatestNewsItems.length + 1,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setForm(editing || {
+      text: "",
+      isVisible: true,
+      displayOrder: defaultLatestNewsItems.length + 1,
+    });
+  }, [editing]);
+
+  const save = async () => {
+    if (!form.text.trim()) {
+      toast({ title: "News text is required", description: "Please enter the ticker announcement text.", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      if (form.id) unmarkLatestNewsDeleted(form.id);
+      unmarkLatestNewsDeleted(form.text);
+      const payload = latestNewsToPayload({ ...form, isVisible: form.isVisible !== false }, form.displayOrder || 1);
+      if (form.adminId) {
+        await updateContent("latest_news", form.adminId, payload);
+      } else {
+        await createContent("latest_news", payload);
+      }
+      toast({ title: editing ? "Latest news updated" : "Latest news added" });
+      onSaved();
+    } catch (error) {
+      toast({
+        title: "Unable to save latest news",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-7">
+        <h1 className="text-[30px] font-bold text-[#4a2b22]">{editing ? "Edit Latest News" : "Add Latest News"}</h1>
+        <p className="mt-1 text-[#6e4a3b]">
+          {editing ? "Update this scrolling homepage announcement." : "Add a new announcement to the scrolling Latest News ticker on the homepage."}
+        </p>
+      </div>
+      <div className="max-w-3xl rounded-2xl border border-[#e5ded4] bg-white p-8 shadow-sm">
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label>Announcement Text <span className="text-red-600">*</span></Label>
+            <Textarea
+              rows={3}
+              value={form.text}
+              onChange={(event) => setForm({ ...form, text: event.target.value })}
+              placeholder="e.g. Admissions Open from Pre-KG to Class 10 (AY 2026–27)"
+            />
+          </div>
+          <div className="space-y-2 max-w-[200px]">
+            <Label>Display Order</Label>
+            <Input
+              type="number"
+              min="1"
+              value={form.displayOrder || ""}
+              onChange={(event) => setForm({ ...form, displayOrder: Number(event.target.value || 1) })}
+              placeholder="1"
+            />
+          </div>
+          <label className="flex items-center gap-3 pt-1">
+            <Switch
+              checked={form.isVisible !== false}
+              onCheckedChange={(checked) => setForm({ ...form, isVisible: checked })}
+            />
+            Published on homepage ticker
+          </label>
+        </div>
+
+        <div className="mt-7 flex justify-end gap-3 border-t border-[#e5ded4] pt-4">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button className="bg-[#137a49] hover:bg-[#0f663d]" disabled={isSaving} onClick={save}>
+            {editing ? "Save Latest News" : "Add Latest News"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const AdminDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -3870,6 +4134,7 @@ const AdminDashboard = () => {
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [editingDisclosure, setEditingDisclosure] = useState<MandatoryDocument | null>(null);
   const [editingBanner, setEditingBanner] = useState<BannerSlide | null>(null);
+  const [editingLatestNews, setEditingLatestNews] = useState<LatestNewsItem | null>(null);
   const [teacherOrderDirty, setTeacherOrderDirty] = useState(false);
   const [openGroup, setOpenGroup] = useState<NavGroupId | null>(() => groupForSection(sectionFromAdminPath(location.pathname)));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -3891,6 +4156,7 @@ const AdminDashboard = () => {
     if (nextSection !== "teacher-add") setEditingTeacher(null);
     if (nextSection !== "disclosure-add") setEditingDisclosure(null);
     if (nextSection !== "banner-add") setEditingBanner(null);
+    if (nextSection !== "latest-news-add") setEditingLatestNews(null);
   }, [location.pathname]);
 
   const logout = async () => {
@@ -3910,6 +4176,7 @@ const AdminDashboard = () => {
     if (next !== "teacher-add") setEditingTeacher(null);
     if (next !== "disclosure-add") setEditingDisclosure(null);
     if (next !== "banner-add") setEditingBanner(null);
+    if (next !== "latest-news-add") setEditingLatestNews(null);
     setSection(next);
     setMobileOpen(false);
     navigate(adminPathForSection(next));
@@ -3951,6 +4218,12 @@ const AdminDashboard = () => {
     setMobileOpen(false);
     navigate("/admin/banners/add");
   };
+  const editLatestNews = (item: LatestNewsItem) => {
+    setEditingLatestNews(item);
+    setSection("latest-news-add");
+    setMobileOpen(false);
+    navigate("/admin/latest-news/add");
+  };
   const toggleGroup = (group: NavGroupId) => setOpenGroup((current) => current === group ? null : group);
   const isActive = (...sections: Section[]) => sections.includes(section);
 
@@ -3966,7 +4239,7 @@ const AdminDashboard = () => {
             </div>
             <button className="ml-auto lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X className="h-5 w-5" /></button>
           </div>
-          <nav className="min-h-0 flex-1 space-y-0.5 overflow-hidden px-2 py-3">
+          <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
             <NavButton active={section === "dashboard"} icon={LayoutDashboard} label="Dashboard" onClick={() => go("dashboard")} />
             <NavGroup id="enquiries" icon={Inbox} label="Enquiries" active={isActive("home-enquiries", "contact-enquiries")} open={openGroup === "enquiries"} onToggle={toggleGroup}>
               <NavButton nested active={section === "home-enquiries"} icon={Home} label="Home" onClick={() => go("home-enquiries")} />
@@ -3995,6 +4268,10 @@ const AdminDashboard = () => {
             <NavGroup id="banners" icon={Image} label="Banner" active={isActive("banner-add", "banner-list")} open={openGroup === "banners"} onToggle={toggleGroup}>
               <NavButton nested active={section === "banner-add"} icon={FilePlus} label="Add Banner" onClick={() => { setEditingBanner(null); go("banner-add"); }} />
               <NavButton nested active={section === "banner-list"} icon={Image} label="View Banners" onClick={() => go("banner-list")} />
+            </NavGroup>
+            <NavGroup id="latest-news" icon={Newspaper} label="Latest News" active={isActive("latest-news-add", "latest-news-list")} open={openGroup === "latest-news"} onToggle={toggleGroup}>
+              <NavButton nested active={section === "latest-news-add"} icon={FilePlus} label="Add Latest News" onClick={() => { setEditingLatestNews(null); go("latest-news-add"); }} />
+              <NavButton nested active={section === "latest-news-list"} icon={FileText} label="View Latest News" onClick={() => go("latest-news-list")} />
             </NavGroup>
           </nav>
           <div className="shrink-0 border-t border-[#e8e0d7] bg-[#f1eee9] p-2.5">
@@ -4033,6 +4310,8 @@ const AdminDashboard = () => {
             {section === "disclosure-add" && <DisclosureFormPage editing={editingDisclosure} onCancel={() => { setEditingDisclosure(null); go("disclosure-list"); }} onSaved={() => { setEditingDisclosure(null); go("disclosure-list"); }} />}
             {section === "banner-list" && <BannersViewPage onAdd={() => { setEditingBanner(null); go("banner-add"); }} onEdit={editBanner} />}
             {section === "banner-add" && <BannerFormPage editing={editingBanner} onCancel={() => { setEditingBanner(null); go("banner-list"); }} onSaved={() => { setEditingBanner(null); go("banner-list"); }} />}
+            {section === "latest-news-list" && <LatestNewsViewPage onAdd={() => { setEditingLatestNews(null); go("latest-news-add"); }} onEdit={editLatestNews} />}
+            {section === "latest-news-add" && <LatestNewsFormPage editing={editingLatestNews} onCancel={() => { setEditingLatestNews(null); go("latest-news-list"); }} onSaved={() => { setEditingLatestNews(null); go("latest-news-list"); }} />}
           </div>
         </main>
       </div>

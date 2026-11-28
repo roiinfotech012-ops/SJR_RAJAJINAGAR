@@ -1,12 +1,31 @@
-import { schoolConfig } from "@/schoolConfig";
+import { useEffect, useMemo, useState } from "react";
+import { getPublicContent, type AdminContentItem } from "@/lib/api";
+import { mergeLatestNewsItems } from "@/lib/latestNewsContent";
 
 const MarqueeStrip = () => {
-  const items = [
-    schoolConfig.fullName,
-    "Admissions Open from Pre-KG to Class 10 (AY 2026–27)",
-    "CBSE Affiliation No: 831136 | School Code: 46766",
-    "Empowering Young Minds Through Quality Education Since 1981",
-  ];
+  const [adminItems, setAdminItems] = useState<AdminContentItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublicContent("latest_news", 100)
+      .then((result) => {
+        if (isMounted && Array.isArray(result?.items)) {
+          setAdminItems(result.items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const items = useMemo(() => {
+    return mergeLatestNewsItems(adminItems)
+      .filter((item) => item.isVisible !== false)
+      .map((item) => item.text);
+  }, [adminItems]);
+
+  if (items.length === 0) return null;
 
   // Repeat items for seamless scroll
   const loop = [...items, ...items, ...items];
