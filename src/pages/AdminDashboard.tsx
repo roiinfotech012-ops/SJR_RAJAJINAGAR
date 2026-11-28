@@ -1866,21 +1866,7 @@ function GalleryImagePage() {
             </div>
           ) : (
             <div className="mt-5 max-w-3xl space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Gallery category / album</Label>
-                {selectedCategory && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDeleteCategory}
-                    className="h-7 px-2 text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700"
-                  >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    Delete Category
-                  </Button>
-                )}
-              </div>
+              <Label>Gallery category / album</Label>
               <div className="flex items-center gap-2">
                 <Select
                   value={selectedCategory}
@@ -2219,21 +2205,7 @@ function GalleryVideoPage() {
             </div>
           ) : (
             <div className="mt-5 max-w-3xl space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Video category</Label>
-                {selectedCategory && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDeleteCategory}
-                    className="h-7 px-2 text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700"
-                  >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    Delete Category
-                  </Button>
-                )}
-              </div>
+              <Label>Video category</Label>
               <div className="flex items-center gap-2">
                 <Select
                   value={selectedCategory}
