@@ -11,6 +11,7 @@ import { allSchoolPhotos } from "@/data/galleryPhotos";
 import { authenticTestimonials } from "@/data/testimonials";
 import { staffMembers } from "@/data/staff";
 import { mandatoryDocuments } from "@/data/disclosures";
+import { defaultBannerSlides } from "@/lib/bannerContent";
 
 export type EnquiryStatus = (typeof ENQUIRY_STATUSES)[number];
 export type EnquirySource = "home" | "contact";
@@ -324,6 +325,24 @@ const initialDisclosureContent: AdminContentItem[] = mandatoryDocuments.map((doc
   updated_at: "2026-10-01T00:00:00Z",
 }));
 
+const initialBannerContent: AdminContentItem[] = defaultBannerSlides.map((banner, index) => ({
+  id: banner.id || `banner-${index + 1}`,
+  type: "banner",
+  title: banner.title,
+  subtitle: banner.subtitle,
+  body: banner.description,
+  image_url: banner.image,
+  category: banner.tag,
+  published_at: null,
+  is_visible: true,
+  display_order: banner.displayOrder || index + 1,
+  fields: {
+    tag: banner.tag,
+  },
+  created_at: "2026-10-01T00:00:00Z",
+  updated_at: "2026-10-01T00:00:00Z",
+}));
+
 const emptyStaticData = (): StaticData => ({
   enquiries: [],
   followUps: [],
@@ -335,6 +354,7 @@ const emptyStaticData = (): StaticData => ({
     testimonial: initialTestimonialContent,
     teacher: initialTeacherContent,
     disclosure: initialDisclosureContent,
+    banner: initialBannerContent,
   },
 });
 
@@ -360,6 +380,7 @@ function readStaticData(): StaticData {
         testimonial: Array.isArray(parsed.content?.testimonial) && parsed.content.testimonial.length > 0 ? parsed.content.testimonial : initialTestimonialContent,
         teacher: Array.isArray(parsed.content?.teacher) && parsed.content.teacher.length > 0 ? parsed.content.teacher : initialTeacherContent,
         disclosure: Array.isArray(parsed.content?.disclosure) && parsed.content.disclosure.length > 0 ? parsed.content.disclosure : initialDisclosureContent,
+        banner: Array.isArray(parsed.content?.banner) && parsed.content.banner.length > 0 ? parsed.content.banner : initialBannerContent,
       },
     };
   } catch {
@@ -468,7 +489,7 @@ export type AdminUser = {
   email: string;
 };
 
-export type AdminContentType = "news" | "event" | "gallery" | "video" | "testimonial" | "teacher" | "disclosure";
+export type AdminContentType = "news" | "event" | "gallery" | "video" | "testimonial" | "teacher" | "disclosure" | "banner";
 
 export type AdminContentItem = {
   id: string;

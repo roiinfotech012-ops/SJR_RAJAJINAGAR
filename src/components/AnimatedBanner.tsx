@@ -1,77 +1,38 @@
 import { Button } from "@/components/ui/button";
 import { ChevronRight, GraduationCap, BookOpen, Users, Trophy, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { schoolConfig } from "@/schoolConfig";
+import { getPublicContent, type AdminContentItem } from "@/lib/api";
+import { defaultBannerSlides, mergeBannerItems } from "@/lib/bannerContent";
 
 const AnimatedBanner = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [adminBanners, setAdminBanners] = useState<AdminContentItem[]>([]);
 
-  const slides = [
-    {
-      tag: "Welcome to SJR",
-      title: "Excellence in Education",
-      subtitle: "Shaping Tomorrow's Leaders Today",
-      description: "Where tradition meets innovation in a vibrant, value-driven CBSE learning environment.",
-      image: "/images/Banner/banner-school-building.jpg",
-    },
-    {
-      tag: "A Legacy Since 1981",
-      title: "A Legacy of Learning",
-      subtitle: "Building Character & Confidence",
-      description: "Committed to academic brilliance, ethical integrity, and lifelong learning for every child.",
-      image: "/images/Banner/banner-classroom.jpg",
-    },
-    {
-      tag: "Future-Ready Campus",
-      title: "Modern Learning",
-      subtitle: "State-of-the-Art Facilities",
-      description: "Equipped with AI flat panels, robotics laboratories, and digital infrastructure for progressive education.",
-      image: "/images/Banner/banner-library.jpg",
-    },
-    {
-      tag: "Beyond The Classroom",
-      title: "Holistic Development",
-      subtitle: "Beyond Academics, Building Citizens",
-      description: "Sports, taekwondo, yoga, arts, and values come together for complete, well-rounded development.",
-      image: "/images/Banner/banner-science-lab.jpg",
-    },
-    {
-      tag: "STEM & Robotics",
-      title: "Innovation & Robotics",
-      subtitle: "Hands-on Experiential Learning",
-      description: "Empowering young innovators with practical robotics, creative problem-solving, and future-ready technology skills.",
-      image: "/images/Banner/banner-robotics-stem.jpg",
-    },
-    {
-      tag: "Digital Excellence",
-      title: "Technology in Education",
-      subtitle: "Modern Computer Laboratory",
-      description: "Equipping students with essential digital literacy, computing competence, and tech-driven academic skills.",
-      image: "/images/Banner/banner-computer-lab.jpg",
-    },
-    {
-      tag: "Sports & Athletics",
-      title: "Champions on the Field",
-      subtitle: "Sportsmanship & Active Life",
-      description: "Fostering physical fitness, agility, and teamwork through dedicated coaching and outdoor sports courts.",
-      image: "/images/Banner/banner-sports-volleyball.jpg",
-    },
-    {
-      tag: "Scientific Inquiry",
-      title: "Discovery & Exploration",
-      subtitle: "Composite Science Laboratories",
-      description: "Cultivating scientific temper and hands-on investigative learning through guided laboratory experiments.",
-      image: "/images/Banner/banner-science-practical.jpg",
-    },
-    {
-      tag: "Foundational Years",
-      title: "Joyful Early Education",
-      subtitle: "Play-Way & Activity Learning",
-      description: "A warm and stimulating environment where pre-primary children learn, play, and grow in confidence every day.",
-      image: "/images/Banner/banner-early-childhood.jpg",
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    getPublicContent("banner", 100)
+      .then((result) => {
+        if (isMounted && Array.isArray(result?.items)) {
+          setAdminBanners(result.items);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const slides = useMemo(() => {
+    const merged = mergeBannerItems(adminBanners).filter((b) => b.isVisible !== false);
+    return merged.length > 0 ? merged : defaultBannerSlides;
+  }, [adminBanners]);
+
+  useEffect(() => {
+    if (currentSlide >= slides.length) {
+      setCurrentSlide(0);
+    }
+  }, [currentSlide, slides.length]);
 
   const stats = [
     { icon: GraduationCap, label: "Students", value: "1000+" },

@@ -55,6 +55,14 @@ import {
   disclosureToPayload,
   markDisclosureDeleted,
 } from "@/lib/disclosureContent";
+import {
+  type BannerSlide,
+  defaultBannerSlides,
+  mergeBannerItems,
+  bannerToPayload,
+  markBannerDeleted,
+  unmarkBannerDeleted,
+} from "@/lib/bannerContent";
 import { photos as frontendGalleryPhotos } from "@/pages/gallery/PhotoGallery";
 import { videos as frontendGalleryVideos } from "@/pages/gallery/VideoGallery";
 import sjreLogo from "@/assets/sjre.png";
@@ -119,8 +127,10 @@ type Section =
   | "teacher-list"
   | "disclosure-add"
   | "disclosure-edit"
-  | "disclosure-list";
-type NavGroupId = "enquiries" | "news" | "events" | "gallery" | "testimonials" | "teachers" | "disclosures";
+  | "disclosure-list"
+  | "banner-add"
+  | "banner-list";
+type NavGroupId = "enquiries" | "news" | "events" | "gallery" | "testimonials" | "teachers" | "disclosures" | "banners";
 
 const sourceLabels: Record<EnquirySource, string> = { home: "Home", contact: "Contact" };
 const contentLabels: Record<AdminContentType, string> = {
@@ -131,6 +141,7 @@ const contentLabels: Record<AdminContentType, string> = {
   testimonial: "Testimonials",
   teacher: "Teachers",
   disclosure: "Mandatory Disclosure",
+  banner: "Banner",
 };
 
 const statusStyles: Record<EnquiryStatus, string> = {
@@ -188,6 +199,8 @@ const sectionFromAdminPath = (pathname: string): Section => {
   if (pathname.startsWith("/admin/disclosures/add")) return "disclosure-add";
   if (pathname.startsWith("/admin/disclosures/edit")) return "disclosure-edit";
   if (pathname.startsWith("/admin/disclosures") || pathname.startsWith("/admin/mandatory-disclosure")) return "disclosure-list";
+  if (pathname.startsWith("/admin/banners/add")) return "banner-add";
+  if (pathname.startsWith("/admin/banners")) return "banner-list";
   return "dashboard";
 };
 
@@ -210,6 +223,8 @@ const adminPathForSection = (section: Section) => {
   if (section === "disclosure-add") return "/admin/disclosures/add";
   if (section === "disclosure-edit") return "/admin/disclosures/edit";
   if (section === "disclosure-list") return "/admin/disclosures";
+  if (section === "banner-add") return "/admin/banners/add";
+  if (section === "banner-list") return "/admin/banners";
   return "/admin";
 };
 
@@ -221,6 +236,7 @@ const groupForSection = (section: Section): NavGroupId | null => {
   if (section === "testimonial-add" || section === "testimonial-edit" || section === "testimonial-list") return "testimonials";
   if (section === "teacher-add" || section === "teacher-list") return "teachers";
   if (section === "disclosure-add" || section === "disclosure-edit" || section === "disclosure-list") return "disclosures";
+  if (section === "banner-add" || section === "banner-list") return "banners";
   return null;
 };
 
@@ -327,6 +343,8 @@ const titleForSection = (section: Section) =>
     "disclosure-add": "Add Mandatory Document",
     "disclosure-edit": "Edit Mandatory Document",
     "disclosure-list": "View Mandatory Documents",
+    "banner-add": "Add Banner",
+    "banner-list": "View Banners",
   }[section]);
 
 function NavButton({ active, icon: Icon, label, onClick, nested = false }: { active: boolean; icon: LucideIcon; label: string; onClick: () => void; nested?: boolean }) {
@@ -398,6 +416,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
     events: 0,
     teachers: 0,
     disclosures: 0,
+    banners: 0,
   });
 
   useEffect(() => {
@@ -410,8 +429,9 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
       getContent("testimonial"),
       getContent("teacher"),
       getContent("disclosure"),
+      getContent("banner"),
     ])
-      .then(([result, newsResult, eventResult, galleryResult, videoResult, testimonialResult, teacherResult, disclosureResult]) => {
+      .then(([result, newsResult, eventResult, galleryResult, videoResult, testimonialResult, teacherResult, disclosureResult, bannerResult]) => {
         setStats(result);
         const newsItems = mergeNewsItems(newsResult.items);
         setDashboardCounts({
@@ -423,6 +443,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
           events: mergeEventItems(eventResult.items).length,
           teachers: mergeTeacherItems(teacherResult.items).length,
           disclosures: mergeDisclosureItems(disclosureResult.items).length,
+          banners: mergeBannerItems(bannerResult.items).length,
         });
       })
       .catch(() => undefined);
@@ -432,6 +453,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
     { label: "Total News & Events", value: dashboardCounts.newsTotal, detail: "articles & events in system", icon: Newspaper, tone: "green" },
     { label: "Published News & Events", value: dashboardCounts.newsVisible, detail: "visible on the website", icon: Newspaper, tone: "gold" },
     { label: "Draft News & Events", value: Math.max(0, dashboardCounts.newsTotal - dashboardCounts.newsVisible), detail: "drafts, hidden from site", icon: CalendarDays, tone: "brown" },
+    { label: "Homepage Banners", value: dashboardCounts.banners, detail: "hero slides active", icon: Image, tone: "green" },
     { label: "Gallery Photos", value: dashboardCounts.galleryPhotos, detail: "across all categories", icon: Image, tone: "orange" },
     { label: "Video Gallery", value: dashboardCounts.galleryVideos, detail: "videos available", icon: Video, tone: "navy" },
     { label: "Testimonials", value: dashboardCounts.testimonials, detail: "on the website", icon: MessageSquareQuote, tone: "green" },
@@ -467,6 +489,7 @@ function DashboardHome({ onNavigate }: { onNavigate: (section: Section) => void 
             { label: "Add a testimonial", section: "testimonial-add" as Section },
             { label: "Add a teacher", section: "teacher-add" as Section },
             { label: "Add a mandatory document", section: "disclosure-add" as Section },
+            { label: "Add a homepage banner", section: "banner-add" as Section },
           ].map((action) => (
             <button key={action.label} onClick={() => onNavigate(action.section)} className="flex items-center justify-between rounded-lg border border-[#e5ded4] px-4 py-3 text-left text-[15px] hover:bg-[#f8f6f1]">
               {action.label}
@@ -3506,6 +3529,335 @@ function DisclosureFormPage({
   );
 }
 
+function BannersViewPage({
+  onAdd,
+  onEdit,
+}: {
+  onAdd: () => void;
+  onEdit: (banner: BannerSlide) => void;
+}) {
+  const { toast } = useToast();
+  const [adminItems, setAdminItems] = useState<AdminContentItem[]>([]);
+  const [search, setSearch] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const result = await getContent("banner");
+      setAdminItems(result.items);
+    } catch (error) {
+      toast({
+        title: "Unable to load banners",
+        description: error instanceof Error ? error.message : "Check API/database configuration.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const banners = useMemo(() => mergeBannerItems(adminItems), [adminItems]);
+  const visibleBanners = banners.filter((banner) =>
+    [banner.tag, banner.title, banner.subtitle, banner.description].join(" ").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const remove = async (banner: BannerSlide) => {
+    if (!window.confirm(`Are you sure you want to delete banner "${banner.title}"?`)) return;
+    try {
+      if (banner.adminId) {
+        await deleteContent("banner", banner.adminId);
+      }
+      if (banner.id) markBannerDeleted(banner.id);
+      markBannerDeleted(banner.title);
+      await load();
+      toast({ title: "Banner deleted successfully" });
+    } catch (error) {
+      toast({
+        title: "Unable to delete banner",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleVisibility = async (banner: BannerSlide) => {
+    try {
+      const updated = { ...banner, isVisible: banner.isVisible === false };
+      const payload = bannerToPayload(updated, banner.displayOrder || 0);
+      if (banner.adminId) {
+        await updateContent("banner", banner.adminId, payload);
+      } else {
+        await createContent("banner", payload);
+      }
+      await load();
+      toast({ title: updated.isVisible ? "Banner published" : "Banner hidden" });
+    } catch (error) {
+      toast({
+        title: "Unable to update visibility",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#4a2b22]">Homepage Banners</h1>
+          <p className="mt-1 text-sm text-[#6e4a3b]">{banners.length} banner slides configured — newly added banners display first on the website.</p>
+        </div>
+        <Button onClick={onAdd} className="bg-[#137a49] hover:bg-[#0f663d]">
+          <FilePlus className="mr-2 h-4 w-4" />
+          Add Banner
+        </Button>
+      </div>
+
+      <div className="relative max-w-5xl">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#6e4a3b]" />
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search banners by title, tag, or description..."
+          className="pl-9"
+        />
+      </div>
+
+      <div className="mt-5 grid max-w-5xl gap-4">
+        {visibleBanners.map((banner) => (
+          <div
+            key={banner.id || banner.title}
+            className="flex flex-col gap-4 rounded-2xl border border-[#e5ded4] bg-white p-4 shadow-sm sm:flex-row sm:items-center"
+          >
+            <img
+              src={banner.image || "/placeholder.svg"}
+              alt={banner.title}
+              className="h-28 w-full shrink-0 rounded-xl object-cover sm:w-48"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
+              }}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[#f1eee9] px-2.5 py-0.5 text-[11px] font-semibold text-[#6e4a3b]">
+                  {banner.tag}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={banner.isVisible !== false ? "border-green-200 bg-green-50 text-green-700" : "border-slate-200 bg-slate-100 text-slate-600"}
+                >
+                  {banner.isVisible !== false ? "Published" : "Hidden"}
+                </Badge>
+              </div>
+              <h3 className="mt-1.5 text-base font-bold text-[#3b241d]">{banner.title}</h3>
+              {banner.subtitle && <p className="text-xs font-semibold text-[#137a49]">{banner.subtitle}</p>}
+              {banner.description && <p className="mt-1 line-clamp-2 text-xs text-[#6e4a3b]">{banner.description}</p>}
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => toggleVisibility(banner)}>
+                {banner.isVisible !== false ? "Hide" : "Publish"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onEdit(banner)}>
+                Edit
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => remove(banner)} className="text-red-600">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        {visibleBanners.length === 0 && (
+          <div className="rounded-2xl border border-[#e5ded4] bg-white p-10 text-center text-sm text-[#6e4a3b]">
+            No banners match your search.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BannerFormPage({
+  editing,
+  onCancel,
+  onSaved,
+}: {
+  editing: BannerSlide | null;
+  onCancel: () => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const [form, setForm] = useState<BannerSlide>(() => editing || {
+    tag: "Welcome to SJR",
+    title: "",
+    subtitle: "",
+    description: "",
+    image: "",
+    isVisible: true,
+    displayOrder: defaultBannerSlides.length + 1,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setForm(editing || {
+      tag: "Welcome to SJR",
+      title: "",
+      subtitle: "",
+      description: "",
+      image: "",
+      isVisible: true,
+      displayOrder: defaultBannerSlides.length + 1,
+    });
+  }, [editing]);
+
+  const chooseImage = async (files: FileList | null) => {
+    const file = Array.from(files || []).find((candidate) => candidate.type.startsWith("image/"));
+    if (!file) return;
+    try {
+      const [image] = await readImageFiles([file]);
+      setForm((current) => ({ ...current, image: image.src }));
+    } catch (error) {
+      toast({
+        title: "Unable to process banner image",
+        description: error instanceof Error ? error.message : "Please try a different image file.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const save = async () => {
+    if (!form.title.trim()) {
+      toast({ title: "Title is required", description: "Please enter a banner title.", variant: "destructive" });
+      return;
+    }
+    if (!form.image.trim()) {
+      toast({ title: "Banner image is required", description: "Please upload an image or provide an image URL.", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      if (form.id) unmarkBannerDeleted(form.id);
+      unmarkBannerDeleted(form.title);
+      const payload = bannerToPayload({ ...form, isVisible: form.isVisible !== false }, form.displayOrder || 1);
+      if (form.adminId) {
+        await updateContent("banner", form.adminId, payload);
+      } else {
+        await createContent("banner", payload);
+      }
+      toast({ title: editing ? "Banner updated" : "Banner added" });
+      onSaved();
+    } catch (error) {
+      toast({
+        title: "Unable to save banner",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-7">
+        <h1 className="text-[30px] font-bold text-[#4a2b22]">{editing ? "Edit Banner" : "Add New Banner"}</h1>
+        <p className="mt-1 text-[#6e4a3b]">
+          {editing ? "Update this homepage hero banner slide." : "Create a new hero banner slide for the school homepage."}
+        </p>
+      </div>
+      <div className="max-w-5xl rounded-2xl border border-[#e5ded4] bg-white p-8 shadow-sm">
+        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+          <div>
+            <Label>Banner Image <span className="text-red-600">*</span></Label>
+            <label className="mt-2 flex h-52 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#dccfc1] bg-[#faf9f6] text-center text-[#6e4a3b] hover:bg-[#f1eee9]">
+              {form.image ? (
+                <img src={form.image} alt="Banner preview" className="h-full w-full object-cover" />
+              ) : (
+                <>
+                  <Image className="mb-2 h-8 w-8" />
+                  <span className="text-sm font-medium">Click to upload banner image</span>
+                  <span className="mt-1 text-xs text-[#8a6a5b]">Recommended: 1920 x 880 px</span>
+                </>
+              )}
+              <input className="sr-only" type="file" accept="image/*" onChange={(event) => chooseImage(event.target.files)} />
+            </label>
+            <div className="mt-3 space-y-1.5">
+              <Label className="text-xs">Or Image URL / Path</Label>
+              <Input
+                value={form.image}
+                onChange={(event) => setForm({ ...form, image: event.target.value })}
+                placeholder="/images/Banner/banner-school-building.jpg"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Badge / Tag</Label>
+                <Input
+                  value={form.tag}
+                  onChange={(event) => setForm({ ...form, tag: event.target.value })}
+                  placeholder="Welcome to SJR"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Display Order</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={form.displayOrder || ""}
+                  onChange={(event) => setForm({ ...form, displayOrder: Number(event.target.value || 1) })}
+                  placeholder="1"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Main Title <span className="text-red-600">*</span></Label>
+              <Input
+                value={form.title}
+                onChange={(event) => setForm({ ...form, title: event.target.value })}
+                placeholder="Excellence in Education"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Subtitle</Label>
+              <Input
+                value={form.subtitle}
+                onChange={(event) => setForm({ ...form, subtitle: event.target.value })}
+                placeholder="Shaping Tomorrow's Leaders Today"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                rows={3}
+                value={form.description}
+                onChange={(event) => setForm({ ...form, description: event.target.value })}
+                placeholder="Short description displayed below the banner heading..."
+              />
+            </div>
+            <label className="flex items-center gap-3 pt-1">
+              <Switch
+                checked={form.isVisible !== false}
+                onCheckedChange={(checked) => setForm({ ...form, isVisible: checked })}
+              />
+              Published on homepage
+            </label>
+          </div>
+        </div>
+
+        <div className="mt-7 flex justify-end gap-3 border-t border-[#e5ded4] pt-4">
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button className="bg-[#137a49] hover:bg-[#0f663d]" disabled={isSaving} onClick={save}>
+            {editing ? "Save Banner" : "Add Banner"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const AdminDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -3517,6 +3869,7 @@ const AdminDashboard = () => {
   const [editingTestimonial, setEditingTestimonial] = useState<TestimonialDisplayItem | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [editingDisclosure, setEditingDisclosure] = useState<MandatoryDocument | null>(null);
+  const [editingBanner, setEditingBanner] = useState<BannerSlide | null>(null);
   const [teacherOrderDirty, setTeacherOrderDirty] = useState(false);
   const [openGroup, setOpenGroup] = useState<NavGroupId | null>(() => groupForSection(sectionFromAdminPath(location.pathname)));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -3537,6 +3890,7 @@ const AdminDashboard = () => {
     if (nextSection !== "testimonial-edit") setEditingTestimonial(null);
     if (nextSection !== "teacher-add") setEditingTeacher(null);
     if (nextSection !== "disclosure-add") setEditingDisclosure(null);
+    if (nextSection !== "banner-add") setEditingBanner(null);
   }, [location.pathname]);
 
   const logout = async () => {
@@ -3555,6 +3909,7 @@ const AdminDashboard = () => {
     if (next !== "testimonial-edit") setEditingTestimonial(null);
     if (next !== "teacher-add") setEditingTeacher(null);
     if (next !== "disclosure-add") setEditingDisclosure(null);
+    if (next !== "banner-add") setEditingBanner(null);
     setSection(next);
     setMobileOpen(false);
     navigate(adminPathForSection(next));
@@ -3589,6 +3944,12 @@ const AdminDashboard = () => {
     setSection("disclosure-add");
     setMobileOpen(false);
     navigate("/admin/disclosures/add");
+  };
+  const editBanner = (banner: BannerSlide) => {
+    setEditingBanner(banner);
+    setSection("banner-add");
+    setMobileOpen(false);
+    navigate("/admin/banners/add");
   };
   const toggleGroup = (group: NavGroupId) => setOpenGroup((current) => current === group ? null : group);
   const isActive = (...sections: Section[]) => sections.includes(section);
@@ -3631,6 +3992,10 @@ const AdminDashboard = () => {
               <NavButton nested active={section === "disclosure-add"} icon={FilePlus} label="Add Document" onClick={() => { setEditingDisclosure(null); go("disclosure-add"); }} />
               <NavButton nested active={isActive("disclosure-list", "disclosure-edit")} icon={FileText} label="View Documents" onClick={() => go("disclosure-list")} />
             </NavGroup>
+            <NavGroup id="banners" icon={Image} label="Banner" active={isActive("banner-add", "banner-list")} open={openGroup === "banners"} onToggle={toggleGroup}>
+              <NavButton nested active={section === "banner-add"} icon={FilePlus} label="Add Banner" onClick={() => { setEditingBanner(null); go("banner-add"); }} />
+              <NavButton nested active={section === "banner-list"} icon={Image} label="View Banners" onClick={() => go("banner-list")} />
+            </NavGroup>
           </nav>
           <div className="shrink-0 border-t border-[#e8e0d7] bg-[#f1eee9] p-2.5">
             <div className="flex items-center gap-2.5 rounded-lg border border-[#e8e0d7] bg-white p-2.5">
@@ -3666,6 +4031,8 @@ const AdminDashboard = () => {
             {section === "teacher-add" && <TeacherFormPage editing={editingTeacher} onCancel={() => go("teacher-list")} onSaved={() => go("teacher-list")} />}
             {section === "disclosure-list" && <DisclosuresViewPage onAdd={() => { setEditingDisclosure(null); go("disclosure-add"); }} onEdit={editDisclosure} />}
             {section === "disclosure-add" && <DisclosureFormPage editing={editingDisclosure} onCancel={() => { setEditingDisclosure(null); go("disclosure-list"); }} onSaved={() => { setEditingDisclosure(null); go("disclosure-list"); }} />}
+            {section === "banner-list" && <BannersViewPage onAdd={() => { setEditingBanner(null); go("banner-add"); }} onEdit={editBanner} />}
+            {section === "banner-add" && <BannerFormPage editing={editingBanner} onCancel={() => { setEditingBanner(null); go("banner-list"); }} onSaved={() => { setEditingBanner(null); go("banner-list"); }} />}
           </div>
         </main>
       </div>
