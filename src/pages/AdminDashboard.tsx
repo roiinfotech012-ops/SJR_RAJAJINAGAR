@@ -1492,7 +1492,10 @@ const getYoutubeIdFromUrl = (value: string) => {
   const watchMatch = text.match(/[?&]v=([^&]+)/);
   const shortMatch = text.match(/youtu\.be\/([^?&]+)/);
   const embedMatch = text.match(/youtube\.com\/embed\/([^?&]+)/);
-  return watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || text;
+  const liveMatch = text.match(/youtube\.com\/live\/([^?&]+)/);
+  const shortsMatch = text.match(/youtube\.com\/shorts\/([^?&]+)/);
+  const directId = /^[a-zA-Z0-9_-]{11}$/.test(text) ? text : "";
+  return watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || liveMatch?.[1] || shortsMatch?.[1] || directId || "";
 };
 
 const MAX_ADMIN_IMAGE_BYTES = 150 * 1024;
@@ -2085,7 +2088,7 @@ function GalleryVideoPage() {
   };
 
   const save = async () => {
-    const isDirectVideo = videoUrl.trim().endsWith(".mp4") || videoUrl.trim().startsWith("/videos/");
+    const isDirectVideo = /\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(videoUrl.trim()) || videoUrl.trim().startsWith("/videos/");
     const youtubeId = getYoutubeIdFromUrl(videoUrl);
     if (!selectedCategory) {
       toast({ title: "Choose a category", description: "Select an existing gallery category before saving.", variant: "destructive" });
@@ -2097,6 +2100,9 @@ function GalleryVideoPage() {
     }
 
     const catLabel = customCats.find((c) => c.id === selectedCategory)?.label || categoryLabel(selectedCategory);
+    const thumb = isDirectVideo
+      ? "/images/Photos/School Building/school-building-main-gate.jpg"
+      : `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 
     setIsSaving(true);
     try {
@@ -2107,11 +2113,11 @@ function GalleryVideoPage() {
         image_url: videoUrl.trim(),
         category: selectedCategory,
         is_visible: true,
-        display_order: videos.length + 1,
+        display_order: 1,
         fields: {
           youtubeId: isDirectVideo ? "" : youtubeId,
           isDirectVideo,
-          thumbnail: isDirectVideo ? "/images/Photos/School Building/school-building-main-gate.jpg" : undefined,
+          thumbnail: thumb,
           categoryLabel: catLabel,
         },
       });
