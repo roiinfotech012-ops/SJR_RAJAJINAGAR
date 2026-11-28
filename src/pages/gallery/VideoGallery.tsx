@@ -251,7 +251,7 @@ const VideoGallery = () => {
             </div>
 
             {/* Category Filter Tabs */}
-            {categories.length > 2 && (
+            {categories.length > 1 && (
               <div className="flex flex-wrap gap-2">
                 {categories.map((cat) => (
                   <button
