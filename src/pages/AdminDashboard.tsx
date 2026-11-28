@@ -1554,6 +1554,8 @@ const readImageFiles = (files: File[]) => Promise.all(files.map(compressImageFil
 
 const customGalleryCategoriesKey = "sjr_custom_gallery_categories";
 const customVideoCategoriesKey = "sjr_custom_video_categories";
+const deletedGalleryCategoriesKey = "sjr_deleted_gallery_categories";
+const deletedVideoCategoriesKey = "sjr_deleted_video_categories";
 
 const getStoredCustomCategories = (key: string): { id: string; label: string }[] => {
   try {
@@ -1569,6 +1571,33 @@ const storeCustomCategory = (key: string, category: { id: string; label: string 
     const existing = getStoredCustomCategories(key);
     if (!existing.some((c) => c.id === category.id)) {
       existing.push(category);
+      window.localStorage.setItem(key, JSON.stringify(existing));
+    }
+  } catch {}
+};
+
+const removeCustomCategory = (key: string, categoryId: string) => {
+  try {
+    const existing = getStoredCustomCategories(key);
+    const updated = existing.filter((c) => c.id !== categoryId);
+    window.localStorage.setItem(key, JSON.stringify(updated));
+  } catch {}
+};
+
+const getDeletedCategories = (key: string): string[] => {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const markCategoryDeleted = (key: string, categoryId: string) => {
+  try {
+    const existing = getDeletedCategories(key);
+    if (!existing.includes(categoryId)) {
+      existing.push(categoryId);
       window.localStorage.setItem(key, JSON.stringify(existing));
     }
   } catch {}
@@ -1636,7 +1665,8 @@ function GalleryImagePage() {
       }
     });
 
-    return result;
+    const deletedCats = new Set(getDeletedCategories(deletedGalleryCategoriesKey));
+    return result.filter((cat) => !deletedCats.has(cat.id));
   }, [items, customCats]);
 
   useEffect(() => {
@@ -1676,6 +1706,39 @@ function GalleryImagePage() {
     setIsAddingCategory(false);
     setNewCategoryName("");
     toast({ title: "Category created", description: `Category "${name}" created and selected. You can now upload images to it.` });
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!selectedCategory) return;
+    const catObj = categories.find((c) => c.id === selectedCategory);
+    const catName = catObj ? catObj.label.replace(/\s*\(\d+\)$/, "") : selectedCategory;
+    const count = categoryImages.length;
+
+    const message = count > 0
+      ? `Are you sure you want to delete the category "${catName}" and all ${count} image(s) inside it? This action cannot be undone.`
+      : `Are you sure you want to delete the category "${catName}"?`;
+
+    if (!window.confirm(message)) return;
+
+    try {
+      if (count > 0) {
+        await Promise.all(categoryImages.map((img) => deleteContent("gallery", img.id)));
+      }
+      removeCustomCategory(customGalleryCategoriesKey, selectedCategory);
+      markCategoryDeleted(deletedGalleryCategoriesKey, selectedCategory);
+      setCustomCats((current) => current.filter((c) => c.id !== selectedCategory));
+
+      const remaining = categories.filter((c) => c.id !== selectedCategory);
+      setSelectedCategory(remaining[0]?.id || "");
+      await load();
+      toast({ title: "Category deleted", description: `Category "${catName}" has been removed.` });
+    } catch (error) {
+      toast({
+        title: "Unable to delete category",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const chooseFiles = async (files: FileList | null) => {
@@ -1803,32 +1866,59 @@ function GalleryImagePage() {
             </div>
           ) : (
             <div className="mt-5 max-w-3xl space-y-2">
-              <Label>Gallery category / album</Label>
-              <Select
-                value={selectedCategory}
-                onValueChange={(val) => {
-                  if (val === "__new_category__") {
-                    setIsAddingCategory(true);
-                  } else {
-                    setSelectedCategory(val);
-                  }
-                }}
-              >
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem
-                    value="__new_category__"
-                    className="text-[#137a49] font-bold border-t border-[#e5ded4] mt-1 pt-2 cursor-pointer"
+              <div className="flex items-center justify-between">
+                <Label>Gallery category / album</Label>
+                {selectedCategory && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeleteCategory}
+                    className="h-7 px-2 text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
-                    + Add New Category...
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Delete Category
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={selectedCategory}
+                  onValueChange={(val) => {
+                    if (val === "__new_category__") {
+                      setIsAddingCategory(true);
+                    } else {
+                      setSelectedCategory(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value="__new_category__"
+                      className="text-[#137a49] font-bold border-t border-[#e5ded4] mt-1 pt-2 cursor-pointer"
+                    >
+                      + Add New Category...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {selectedCategory && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDeleteCategory}
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 shrink-0"
+                  >
+                    <Trash2 className="mr-1.5 h-4 w-4" />
+                    Delete Category
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1937,7 +2027,8 @@ function GalleryVideoPage() {
       }
     });
 
-    return result;
+    const deletedCats = new Set(getDeletedCategories(deletedVideoCategoriesKey));
+    return result.filter((cat) => !deletedCats.has(cat.id));
   }, [videos, customCats]);
 
   useEffect(() => {
@@ -1971,6 +2062,40 @@ function GalleryVideoPage() {
     setIsAddingCategory(false);
     setNewCategoryName("");
     toast({ title: "Category created", description: `Category "${name}" created and selected. You can now add videos to it.` });
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!selectedCategory) return;
+    const catObj = categories.find((c) => c.id === selectedCategory);
+    const catName = catObj ? catObj.label.replace(/\s*\(\d+\)$/, "") : selectedCategory;
+    const catVideos = videos.filter((item) => (item.category || selectedCategory) === selectedCategory || (!item.category && selectedCategory));
+    const count = catVideos.length;
+
+    const message = count > 0
+      ? `Are you sure you want to delete the video category "${catName}" and all ${count} video(s) inside it? This action cannot be undone.`
+      : `Are you sure you want to delete the video category "${catName}"?`;
+
+    if (!window.confirm(message)) return;
+
+    try {
+      if (count > 0) {
+        await Promise.all(catVideos.map((vid) => deleteContent("video", vid.id)));
+      }
+      removeCustomCategory(customVideoCategoriesKey, selectedCategory);
+      markCategoryDeleted(deletedVideoCategoriesKey, selectedCategory);
+      setCustomCats((current) => current.filter((c) => c.id !== selectedCategory));
+
+      const remaining = categories.filter((c) => c.id !== selectedCategory);
+      setSelectedCategory(remaining[0]?.id || "");
+      await load();
+      toast({ title: "Category deleted", description: `Category "${catName}" has been removed.` });
+    } catch (error) {
+      toast({
+        title: "Unable to delete category",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const save = async () => {
@@ -2094,32 +2219,59 @@ function GalleryVideoPage() {
             </div>
           ) : (
             <div className="mt-5 max-w-3xl space-y-2">
-              <Label>Video category</Label>
-              <Select
-                value={selectedCategory}
-                onValueChange={(val) => {
-                  if (val === "__new_category__") {
-                    setIsAddingCategory(true);
-                  } else {
-                    setSelectedCategory(val);
-                  }
-                }}
-              >
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem
-                    value="__new_category__"
-                    className="text-[#137a49] font-bold border-t border-[#e5ded4] mt-1 pt-2 cursor-pointer"
+              <div className="flex items-center justify-between">
+                <Label>Video category</Label>
+                {selectedCategory && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeleteCategory}
+                    className="h-7 px-2 text-xs font-semibold text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
-                    + Add New Category...
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Delete Category
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={selectedCategory}
+                  onValueChange={(val) => {
+                    if (val === "__new_category__") {
+                      setIsAddingCategory(true);
+                    } else {
+                      setSelectedCategory(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value="__new_category__"
+                      className="text-[#137a49] font-bold border-t border-[#e5ded4] mt-1 pt-2 cursor-pointer"
+                    >
+                      + Add New Category...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {selectedCategory && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDeleteCategory}
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 shrink-0"
+                  >
+                    <Trash2 className="mr-1.5 h-4 w-4" />
+                    Delete Category
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>
