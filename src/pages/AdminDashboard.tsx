@@ -1643,7 +1643,11 @@ function GalleryImagePage() {
     if (!selectedCategory && categories[0]) setSelectedCategory(categories[0].id);
   }, [categories, selectedCategory]);
 
-  const categoryImages = items.filter((item) => (item.category || "gallery") === selectedCategory);
+  const categoryImages = useMemo(() => {
+    return items
+      .filter((item) => (item.category || "gallery") === selectedCategory)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [items, selectedCategory]);
 
   const handleCreateCategory = () => {
     const name = newCategoryName.trim();
@@ -2139,7 +2143,10 @@ function GalleryVideoPage() {
         <div className="rounded-2xl border border-[#e5ded4] bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold">Videos in this category</h2>
           <div className="mt-7 grid gap-4 md:grid-cols-3">
-            {videos.filter((item) => (item.category || selectedCategory) === selectedCategory || (!item.category && selectedCategory)).map((item) => {
+            {videos
+              .filter((item) => (item.category || selectedCategory) === selectedCategory || (!item.category && selectedCategory))
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .map((item) => {
               const youtubeId = getYoutubeIdFromUrl(String(item.fields?.youtubeId || item.image_url || item.title));
               const isDirectVideo = item.image_url && /\.(mp4|webm|mov)$/i.test(item.image_url);
               const thumbUrl = (item.fields?.thumbnail as string) || (youtubeId && !isDirectVideo ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : "/placeholder.svg");

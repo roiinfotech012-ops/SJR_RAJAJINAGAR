@@ -380,10 +380,10 @@ function visibleContent(items: AdminContentItem[], limit: number) {
   return items
     .filter((item) => item.is_visible)
     .sort((a, b) => {
-      if (a.type === "news" || a.type === "event") {
-        return new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime();
-      }
-      return (a.display_order || 0) - (b.display_order || 0) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      const timeA = new Date(a.published_at || a.created_at).getTime() || 0;
+      const timeB = new Date(b.published_at || b.created_at).getTime() || 0;
+      if (timeA !== timeB) return timeB - timeA;
+      return (a.display_order || 0) - (b.display_order || 0);
     })
     .slice(0, limit);
 }
@@ -703,7 +703,12 @@ export function deleteEnquiry(id: string) {
 export function getContent(type: AdminContentType) {
   if (!useApiAuth) {
     requireStaticAdmin();
-    return Promise.resolve({ items: readStaticData().content[type] });
+    const items = [...readStaticData().content[type]].sort((a, b) => {
+      const timeA = new Date(a.published_at || a.created_at).getTime() || 0;
+      const timeB = new Date(b.published_at || b.created_at).getTime() || 0;
+      return timeB - timeA;
+    });
+    return Promise.resolve({ items });
   }
 
   return request<{ items: AdminContentItem[] }>(`/api/admin/content/${type}`);

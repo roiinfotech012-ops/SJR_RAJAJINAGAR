@@ -143,7 +143,17 @@ export const mergeNewsItems = (adminNews: AdminContentItem[] = []): NewsDisplayI
     bySlug.set(displayItem.slug || item.id, displayItem);
   });
 
-  return Array.from(bySlug.values()).filter((item) => !deletedSlugs.has(item.slug));
+  return Array.from(bySlug.values())
+    .filter((item) => !deletedSlugs.has(item.slug))
+    .sort((a, b) => {
+      const timeA = new Date(a.dateValue || a.adminItem?.created_at || a.date).getTime() || 0;
+      const timeB = new Date(b.dateValue || b.adminItem?.created_at || b.date).getTime() || 0;
+      if (timeA !== timeB) return timeB - timeA;
+      const createdA = a.adminItem?.created_at ? new Date(a.adminItem.created_at).getTime() : 0;
+      const createdB = b.adminItem?.created_at ? new Date(b.adminItem.created_at).getTime() : 0;
+      if (createdA !== createdB) return createdB - createdA;
+      return (b.adminItem ? 1 : 0) - (a.adminItem ? 1 : 0);
+    });
 };
 
 export const findNewsItem = (adminNews: AdminContentItem[], slug?: string): NewsDisplayItem | undefined => {

@@ -44,8 +44,11 @@ const VideoGallery = () => {
     getPublicContent("video")
       .then((result) => {
         if (result && result.items && result.items.length > 0) {
+          const sorted = [...result.items].sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
           setAdminVideos(
-            result.items.map((item) => {
+            sorted.map((item) => {
               const ytId = getYoutubeId(item.fields?.youtubeId || item.image_url || item.title);
               const isDirectVideo = item.image_url && /\.(mp4|webm|mov)$/i.test(item.image_url);
               return {

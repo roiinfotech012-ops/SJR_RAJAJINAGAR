@@ -100,13 +100,20 @@ export const mergeTeacherItems = (adminItems: AdminContentItem[] = []): Teacher[
     byName.set(key, {
       ...existing,
       ...teacher,
-      displayOrder: teacher.displayOrder || existing?.displayOrder || 999,
+      displayOrder: teacher.displayOrder || existing?.displayOrder || 0,
     });
   });
 
   return Array.from(byName.values())
     .filter((t) => !deletedNames.has(t.name.toLowerCase().trim()))
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    .sort((a, b) => {
+      const aCreated = a.adminItem?.created_at ? new Date(a.adminItem.created_at).getTime() : 0;
+      const bCreated = b.adminItem?.created_at ? new Date(b.adminItem.created_at).getTime() : 0;
+      if (aCreated && bCreated && aCreated !== bCreated) return bCreated - aCreated;
+      if (aCreated && !bCreated) return -1;
+      if (!aCreated && bCreated) return 1;
+      return (a.displayOrder || 0) - (b.displayOrder || 0);
+    });
 };
 
 export const teacherOrderKey = (items: Teacher[]) => items.map((item) => item.name).join("|");

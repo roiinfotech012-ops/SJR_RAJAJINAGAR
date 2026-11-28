@@ -90,13 +90,20 @@ export const mergeDisclosureItems = (adminItems: AdminContentItem[] = []): Manda
     byTitle.set(key, {
       ...existing,
       ...doc,
-      displayOrder: doc.displayOrder || existing?.displayOrder || 999,
+      displayOrder: doc.displayOrder || existing?.displayOrder || 0,
     });
   });
 
   return Array.from(byTitle.values())
     .filter((doc) => !deletedTitles.has(doc.title.toLowerCase().trim()))
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    .sort((a, b) => {
+      const aCreated = a.adminItem?.created_at ? new Date(a.adminItem.created_at).getTime() : 0;
+      const bCreated = b.adminItem?.created_at ? new Date(b.adminItem.created_at).getTime() : 0;
+      if (aCreated && bCreated && aCreated !== bCreated) return bCreated - aCreated;
+      if (aCreated && !bCreated) return -1;
+      if (!aCreated && bCreated) return 1;
+      return (a.displayOrder || 0) - (b.displayOrder || 0);
+    });
 };
 
 export const disclosureToPayload = (doc: MandatoryDocument, displayOrder = doc.displayOrder || 0): AdminContentPayload => ({

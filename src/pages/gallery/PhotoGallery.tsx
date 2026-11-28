@@ -31,8 +31,11 @@ const PhotoGallery = () => {
     getPublicContent("gallery")
       .then((result) => {
         if (result && result.items && result.items.length > 0) {
+          const sorted = [...result.items].sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
           setAdminPhotos(
-            result.items.map((item) => ({
+            sorted.map((item) => ({
               title: item.title,
               src: item.image_url || "/placeholder.svg",
               category: item.category || "events",

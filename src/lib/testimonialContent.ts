@@ -95,7 +95,14 @@ export const mergeTestimonialItems = (adminTestimonials: AdminContentItem[] = []
   });
   return Array.from(byName.values())
     .filter((item) => !deletedNames.has(item.name.toLowerCase()))
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    .sort((a, b) => {
+      const aCreated = a.adminItem?.created_at ? new Date(a.adminItem.created_at).getTime() : 0;
+      const bCreated = b.adminItem?.created_at ? new Date(b.adminItem.created_at).getTime() : 0;
+      if (aCreated && bCreated && aCreated !== bCreated) return bCreated - aCreated;
+      if (aCreated && !bCreated) return -1;
+      if (!aCreated && bCreated) return 1;
+      return (a.displayOrder || 0) - (b.displayOrder || 0);
+    });
 };
 
 export const testimonialDisplayToPayload = (item: TestimonialDisplayItem): AdminContentPayload => ({
